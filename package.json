@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "dev:game": "vite build --watch",
-        "dev:devvit": "devvit playtest YOUR_DEV_SUBREDDIT",
+        "dev:devvit": "devvit playtest houseofhacks",
         "dev": "vite",
         "upload": "devvit upload"
     },
