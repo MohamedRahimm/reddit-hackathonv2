@@ -1,5 +1,4 @@
-// Learn more at developers.reddit.com/docs
-import { Devvit, useState } from '@devvit/public-api';
+import { Devvit } from '@devvit/public-api';
 
 Devvit.configure({
     redditAPI: true,
@@ -34,11 +33,10 @@ Devvit.addCustomPostType({
     name: 'Experience Post',
     height: 'regular',
     render: (_context) => {
-        const [counter, setCounter] = useState(0);
 
         return (
             <vstack height="100%" width="100%" gap="medium" alignment="center middle">
-                <webview url='index.html'></webview>
+                <webview id='mywebview' url='index.html' width="100%" height="100%"></webview>
             </vstack>
         );
     },
