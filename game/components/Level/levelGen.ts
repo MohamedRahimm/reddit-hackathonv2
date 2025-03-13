@@ -1,10 +1,12 @@
+export const TILE_SIZE = 64;
+
 // Tile types
 export enum Tiles {
-    Door,
-    Exit,
-    Blank,
-    Trap,
-    Floor
+    Door = "Door",
+    Exit = "Exit",
+    Blank = "Blank",
+    Trap = "Trap",
+    Floor = "Floor"
 }
 
 
