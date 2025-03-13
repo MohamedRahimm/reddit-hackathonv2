@@ -1,126 +1,90 @@
 import Matter from "matter-js";
-  
-function rotateVector(vector, angle) {
-    return {
-      x: vector.x * Math.cos(angle) - vector.y * Math.sin(angle),
-      y: vector.x * Math.sin(angle) + vector.y * Math.cos(angle)
-    }
+import * as Level from "./levelGen";
+const { levelData, TILE_SIZE, Tiles } = Level
+import * as Character from "./player";
+const { player, playerRadius } = Character
+
+
+
+
+//game objects values
+var game = {
+  cycle: 0,
+  width: levelData.length,
+  height: levelData[0].length,
   }
   
-  
-  //game objects values
-  var game = {
-    cycle: 0,
-    width: 1200,
-    height: 800,
+export const Engine = Matter.Engine;
+export const Render = Matter.Render;
+export const World = Matter.World;
+export const Events = Matter.Events;
+export const Body = Matter.Body;
+//Composites = Matter.Composites,
+export const Bodies = Matter.Bodies;
+
+// create an engine
+var engine = Engine.create();
+
+var render = Render.create({
+  element: document.body,
+  engine: engine,
+  options: {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    pixelRatio: 1,
+    background: 'rgba(255, 0, 0, 0.0)',
+    wireframeBackground: '#222',
+  //   enabled: true,
+    wireframes: false,
+    showVelocity: false,
+    showAngleIndicator: true,
+    showCollisions: false,
   }
+});
   
-  var Engine = Matter.Engine,
-    Render = Matter.Render,
-    World = Matter.World,
-    Events = Matter.Events,
-    Body = Matter.Body,
-    //Composites = Matter.Composites,
-    Bodies = Matter.Bodies;
+
+// Adds walls and objects to level
+for (let row = 0; row < levelData.length; row++) {
+  for (let col = 0; col < levelData[row].length; col++) {
+      const tileType = levelData[row][col];
+
+      // Calculate tile x, y from grid pos
+      const xPos = col * TILE_SIZE;
+      const yPos = row * TILE_SIZE;
+
+      // Check the tile type and add appropriate bodies to the world
+      if (tileType !== Tiles.Blank) {
+          const tile = Bodies.rectangle(xPos, yPos, TILE_SIZE, TILE_SIZE, { 
+              isStatic: true, // Non-movable object
+              label: tileType  // Tile name
+          });
+          World.add(engine.world, tile);
+      } 
+      // Optionally, handle other tile types (e.g., Blank) if needed
+      else if (tileType === Tiles.Blank) {
+          // No body is added for blank tiles (or handle them differently if needed)
+      }
+  }
+}
   
-  // create an engine
-  var engine = Engine.create();
-  
-  var render = Render.create({
-    element: document.body,
-    engine: engine,
-    options: {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      pixelRatio: 1,
-      background: 'rgba(255, 0, 0, 0.0)',
-      wireframeBackground: '#222',
-    //   enabled: true,
-      wireframes: false,
-      showVelocity: false,
-      showAngleIndicator: true,
-      showCollisions: false,
-    }
-  });
-  
-  //add the walls
-  var offset = 5;
-  World.add(engine.world, [
-    Bodies.rectangle(400, -offset, game.width * 2 + 2 * offset, 50, {
-      isStatic: true
-    }),
-    Bodies.rectangle(400, game.height + offset, game.width * 2 + 2 * offset, 50, {
-      isStatic: true
-    }),
-    Bodies.rectangle(game.width + offset, 300, 50, game.height * 2 + 2 * offset, {
-      isStatic: true
-    }),
-    Bodies.rectangle(-offset, 300, 50, game.height * 2 + 2 * offset, {
-      isStatic: true
-    })
-  ]);
-  
-  // add some ramps to the world for the bodies to roll down
-  World.add(engine.world, [
-    //Bodies.rectangle(200, 150, 700, 20, { isStatic: true, angle: Math.PI * 0.06 }),
-    Bodies.rectangle(620, 270, 1000, 50, {
-      isStatic: true,
-      angle: -Math.PI * 0.1
-    }),
-    Bodies.rectangle(260, 780, 700, 300, {
-      isStatic: true,
-      angle: Math.PI * 0.15
-    }),
-    Bodies.rectangle(1050, 750, 600, 100, {
-      isStatic: true,
-      //angle: -Math.PI * 0.1
-    }),
-  ]);
-  
-  //adds some balls
-  for(var i = 0; i<35;i++){
-    World.add(engine.world, Bodies.circle(400,200,Math.ceil(6+Math.random()*22),{
-      density: 0.0005,
-      friction: 0,//0.05,
-      frictionStatic: 0.5,
-      frictionAir: 0.001,
-      restitution: 0.5,
-      render:{
-        strokeStyle:'darkgrey',
-        fillStyle:'grey'
-      },
-    })
-  )}
+
+  //adds some balls 🤌
+  // for(var i = 0; i<35;i++){
+  //   World.add(engine.world, Bodies.circle(400,200,Math.ceil(6+Math.random()*22),{
+  //     density: 0.0005,
+  //     friction: 0,//0.05,
+  //     frictionStatic: 0.5,
+  //     frictionAir: 0.001,
+  //     restitution: 0.5,
+  //     render:{
+  //       strokeStyle:'darkgrey',
+  //       fillStyle:'grey'
+  //     },
+  //   })
+  // )}
   
   //add the player
-  //Extends the Matter.Body class to add custom properties
-  interface PlayerBody extends Matter.Body {
-    ground: boolean;
-    jumpCD: number;
-  }
 
-  const playerRadius = 25;
-  var player = Bodies.rectangle(800, game.height - 200, playerRadius, playerRadius, {
-    density: 0.001,
-    friction: 0.7,
-    frictionStatic: 0,
-    frictionAir: 0.005,
-    restitution: 0.3,
-    collisionFilter: {
-        category: 1,
-        group: 1,
-        mask: 1,
-    },
-    render: {
-        strokeStyle: 'black',
-        fillStyle: 'lightgrey',
-    },
-}) as PlayerBody;
-// Sets custom PlayerBody class properties
-player.ground = false;
-player.jumpCD = 0;
-Body.setInertia(player, Infinity)
-  
   
   //this sensor check if the player is on the ground to enable jumping
   var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
@@ -132,7 +96,7 @@ Body.setInertia(player, Infinity)
   })
   playerSensor.collisionFilter.group = -1
   
-  //populate world
+  // Add player and collision sensor to world
   World.add(engine.world, [player, playerSensor]);
   
   //looks for key presses and logs them
@@ -146,32 +110,32 @@ Body.setInertia(player, Infinity)
     // console.log(`Key up: ${e.code}`);
   });
   
-  function playerGroundCheck(event, ground) { //runs on collisions events
-    var pairs = event.pairs
-    for (var i = 0, j = pairs.length; i != j; ++i) {
-      var pair = pairs[i];
-      if (pair.bodyA === playerSensor) {
-        player.ground = ground;
-      } else if (pair.bodyB === playerSensor) {
-        player.ground = ground;
-      }
-    }
-  }
+  // function playerGroundCheck(event:Matter.ICollisionEvent, ground: boolean) { //runs on collisions events
+  //   var pairs = event.pairs
+  //   for (var i = 0, j = pairs.length; i != j; ++i) {
+  //     var pair = pairs[i];
+  //     if (pair.bodyA === playerSensor) {
+  //       player.ground = ground;
+  //     } else if (pair.bodyB === playerSensor) {
+  //       player.ground = ground;
+  //     }
+  //   }
+  // }
   
   
   
-  //at the start of a colision for player
-  Events.on(engine, "collisionStart", function(event) {
-    playerGroundCheck(event, true)
-  });
-  //ongoing checks for collisions for player
-  Events.on(engine, "collisionActive", function(event) {
-    playerGroundCheck(event, true)
-  });
-  //at the end of a colision for player set ground to false
-  Events.on(engine, 'collisionEnd', function(event) {
-    playerGroundCheck(event, false);
-  })
+  // //at the start of a colision for player
+  // Events.on(engine, "collisionStart", function(event) {
+  //   playerGroundCheck(event, true)
+  // });
+  // //ongoing checks for collisions for player
+  // Events.on(engine, "collisionActive", function(event) {
+  //   playerGroundCheck(event, true)
+  // });
+  // //at the end of a colision for player set ground to false
+  // Events.on(engine, 'collisionEnd', function(event) {
+  //   playerGroundCheck(event, false);
+  // })
   
   Events.on(engine, "afterTick", function(event) {
     //set sensor velocity to zero so it collides properly
@@ -198,8 +162,8 @@ Events.on(engine, "beforeUpdate", function(event) {
     } else if (keys["ArrowUp"] && !player.ground) {
         console.log("Jump attempt failed, player is not grounded.");
     }
-    // Spin left and right
-    const moveForce = 0.005; // Adjust for speed control
+    // Horizontal movement
+    const moveForce = 0.005; // Adjust for movement speed
 
     if (keys["ArrowLeft"]) {
         console.log("Moving left!");
