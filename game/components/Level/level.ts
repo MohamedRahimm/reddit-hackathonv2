@@ -100,7 +100,7 @@ function rotateVector(vector, angle) {
   }
 
   const playerRadius = 25;
-  var player = Bodies.circle(800, game.height - 200, playerRadius, {
+  var player = Bodies.rectangle(800, game.height - 200, playerRadius, playerRadius, {
     density: 0.001,
     friction: 0.7,
     frictionStatic: 0,
@@ -119,7 +119,7 @@ function rotateVector(vector, angle) {
 // Sets custom PlayerBody class properties
 player.ground = false;
 player.jumpCD = 0;
-
+Body.setInertia(player, Infinity)
   
   
   //this sensor check if the player is on the ground to enable jumping
@@ -192,9 +192,9 @@ Events.on(engine, "beforeUpdate", function(event) {
     // Jump
     if (keys["ArrowUp"] && player.ground && player.jumpCD < game.cycle) {
         console.log("Jumping!");
-        player.jumpCD = game.cycle + 10; // Adds a cooldown to jump
-        Body.applyForce(player, player.position, { x: 0, y: -0.07 });
-        console.log("Applied jump force: {x: 0, y: -0.07}");
+        player.jumpCD = game.cycle + 1; // Adds a cooldown to jump
+        Body.applyForce(player, player.position, { x: 0, y: -0.02 });
+        console.log("Applied jump force: {x: 0, y: -0.02}");
     } else if (keys["ArrowUp"] && !player.ground) {
         console.log("Jump attempt failed, player is not grounded.");
     }
