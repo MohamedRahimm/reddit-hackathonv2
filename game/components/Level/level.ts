@@ -7,27 +7,26 @@ import { player, playerRadius, playerSensor } from "./player";
 //game objects values
 var game = {
   cycle: 0,
-  width: levelData.length,
-  height: levelData[0].length,
+  width: 1200,
+  height: 800,
   }
   
-export const Engine = Matter.Engine;
-export const Render = Matter.Render;
-export const World = Matter.World;
-export const Events = Matter.Events;
-export const Body = Matter.Body;
-//Composites = Matter.Composites,
-export const Bodies = Matter.Bodies;
+const Engine = Matter.Engine;
+const Render = Matter.Render;
+const World = Matter.World;
+const Events = Matter.Events;
+const Body = Matter.Body;
+const Bodies = Matter.Bodies;
 
 // create an engine
-export var engine = Engine.create();
+var engine = Engine.create();
 
 var render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    width: levelData.length,
-    height: levelData[0].length,
+    width: window.innerWidth,
+    height: window.innerHeight,
     pixelRatio: 1,
     background: 'rgba(255, 0, 0, 0.0)',
     wireframeBackground: '#222',
@@ -43,7 +42,6 @@ var render = Render.create({
 // Adds walls and objects to level
 for (let row = 0; row < levelData.length; row++) {
   for (let col = 0; col < levelData[row].length; col++) {
-      console.log(col, row)
       const tileType = levelData[row][col];
 
       // Calculate tile x, y from grid pos
@@ -164,6 +162,9 @@ Events.on(engine, "beforeUpdate", function(event) {
   }
  });
   
+  // Add player and collision sensor to world
+  World.add(engine.world, [player, playerSensor]);
+
   // run the engine
   var runner = Matter.Runner.create();
   Matter.Runner.run(runner, engine);

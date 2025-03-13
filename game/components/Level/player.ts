@@ -1,12 +1,12 @@
 import Matter from "matter-js";
-import { Bodies, Body, World, engine } from "./level";
 import { Tiles, levelData, TILE_SIZE } from "./levelGen";
 
 const doorPos = findDoorPosition(levelData);
 const playerX: number = doorPos.x * TILE_SIZE + TILE_SIZE / 2;
 const playerY: number = doorPos.y * TILE_SIZE + TILE_SIZE / 2;
 
-
+const Body = Matter.Body;
+const Bodies = Matter.Bodies;
 
 //Extends the Matter.Body class to add custom properties
 interface PlayerBody extends Matter.Body {
@@ -14,8 +14,8 @@ interface PlayerBody extends Matter.Body {
     jumpCD: number;
   }
 
-  export const playerRadius: number = 25;
-  export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRadius, {
+export const playerRadius: number = 25;
+export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRadius, {
     density: 0.001,
     friction: 0.3,
     frictionStatic: 0,
@@ -58,9 +58,3 @@ function findDoorPosition(levelData: Tiles[][]): { x: number, y: number } {
     // If no door is found, return a default position
     return { x: 0, y: 0 };
 }
-
-
-
-
- // Add player and collision sensor to world
- World.add(engine.world, [player, playerSensor]);
