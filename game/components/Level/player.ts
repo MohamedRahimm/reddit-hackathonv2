@@ -1,10 +1,12 @@
 import Matter from "matter-js";
-import { Bodies, Body } from "./level";
+import { Bodies, Body, World, engine } from "./level";
 import { Tiles, levelData, TILE_SIZE } from "./levelGen";
 
 const doorPos = findDoorPosition(levelData);
 const playerX: number = doorPos.x * TILE_SIZE + TILE_SIZE / 2;
 const playerY: number = doorPos.y * TILE_SIZE + TILE_SIZE / 2;
+
+
 
 //Extends the Matter.Body class to add custom properties
 interface PlayerBody extends Matter.Body {
@@ -34,6 +36,15 @@ player.ground = false;
 player.jumpCD = 0;
 Body.setInertia(player, Infinity);
 
+  //this sensor check if the player is on the ground to enable jumping
+  export var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
+    isSensor: true,
+    render:{
+      visible: false
+    },
+    //isStatic: true,
+  })
+  playerSensor.collisionFilter.group = -1
 
 function findDoorPosition(levelData: Tiles[][]): { x: number, y: number } {
     for (let row = 0; row < levelData.length; row++) {
@@ -47,3 +58,9 @@ function findDoorPosition(levelData: Tiles[][]): { x: number, y: number } {
     // If no door is found, return a default position
     return { x: 0, y: 0 };
 }
+
+
+
+
+ // Add player and collision sensor to world
+ World.add(engine.world, [player, playerSensor]);

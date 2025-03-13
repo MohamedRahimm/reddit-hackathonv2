@@ -1,9 +1,6 @@
 import Matter from "matter-js";
-import * as Level from "./levelGen";
-const { levelData, TILE_SIZE, Tiles } = Level
-import * as Character from "./player";
-const { player, playerRadius } = Character
-
+import { levelData, TILE_SIZE, Tiles } from "./levelGen";
+import { player, playerRadius, playerSensor } from "./player";
 
 
 
@@ -23,14 +20,14 @@ export const Body = Matter.Body;
 export const Bodies = Matter.Bodies;
 
 // create an engine
-var engine = Engine.create();
+export var engine = Engine.create();
 
 var render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: levelData.length,
+    height: levelData[0].length,
     pixelRatio: 1,
     background: 'rgba(255, 0, 0, 0.0)',
     wireframeBackground: '#222',
@@ -46,6 +43,7 @@ var render = Render.create({
 // Adds walls and objects to level
 for (let row = 0; row < levelData.length; row++) {
   for (let col = 0; col < levelData[row].length; col++) {
+      console.log(col, row)
       const tileType = levelData[row][col];
 
       // Calculate tile x, y from grid pos
@@ -82,22 +80,7 @@ for (let row = 0; row < levelData.length; row++) {
   //     },
   //   })
   // )}
-  
-  //add the player
 
-  
-  //this sensor check if the player is on the ground to enable jumping
-  var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
-    isSensor: true,
-    render:{
-      visible: false
-    },
-    //isStatic: true,
-  })
-  playerSensor.collisionFilter.group = -1
-  
-  // Add player and collision sensor to world
-  World.add(engine.world, [player, playerSensor]);
   
   //looks for key presses and logs them
   var keys: { [key: string]: boolean } = {};
@@ -138,19 +121,23 @@ for (let row = 0; row < levelData.length; row++) {
   // })
   
   Events.on(engine, "afterTick", function(event) {
-    //set sensor velocity to zero so it collides properly
-    Matter.Body.setVelocity(playerSensor, {
-        x: 0,
-        y: 0
-      })
-      //move sensor to below the player
-    Body.setPosition(playerSensor, {
-      x: player.position.x,
-      y: player.position.y + playerRadius
-    });
-  });
+    // Check if player and playerSensor are defined
+    if (player && playerSensor) {
+        //set sensor velocity to zero so it collides properly
+        Matter.Body.setVelocity(playerSensor, {
+            x: 0,
+            y: 0
+        });
+        //move sensor to below the player
+        Body.setPosition(playerSensor, {
+            x: player.position.x,
+            y: player.position.y + playerRadius
+        });
+    };
+});
   
 Events.on(engine, "beforeUpdate", function(event) {
+  if (player && playerSensor) {
     game.cycle++;
     console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
     // Jump
@@ -174,7 +161,8 @@ Events.on(engine, "beforeUpdate", function(event) {
         Body.applyForce(player, player.position, { x: moveForce, y: 0 });
         console.log("Applied rightward force: {x: moveForce, y: 0}");
     }
-  });
+  }
+ });
   
   // run the engine
   var runner = Matter.Runner.create();
