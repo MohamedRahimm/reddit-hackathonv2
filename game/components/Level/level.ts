@@ -1,14 +1,14 @@
 import Matter from "matter-js";
 import { levelData, TILE_SIZE, Tiles } from "./levelGen";
-import { player, playerRadius, playerSensor } from "./player";
+import { player, playerRadius, playerSensor } from "../Player/character";
 
 
 
 //game objects values
 var game = {
   cycle: 0,
-  width: 1200,
-  height: 800,
+  width: levelData[0].length * TILE_SIZE,
+  height: levelData.length * TILE_SIZE,
   }
   
 const Engine = Matter.Engine;
@@ -20,24 +20,26 @@ const Bodies = Matter.Bodies;
 
 // create an engine
 var engine = Engine.create();
-
 var render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: levelData[0].length * TILE_SIZE,
+    height: levelData.length * TILE_SIZE,
     pixelRatio: 1,
-    background: 'rgba(255, 0, 0, 0.0)',
+    background: 'rgba(59, 170, 59, 0.84)',
     wireframeBackground: '#222',
   //   enabled: true,
     wireframes: false,
     showVelocity: false,
     showAngleIndicator: true,
-    showCollisions: false,
+    showCollisions: true,
   }
 });
-  
+Render.lookAt(render, {
+  min: { x: -50, y: -50 },
+  max: { x: levelData[0].length * TILE_SIZE, y: levelData.length * TILE_SIZE },
+});
 
 // Adds walls and objects to level
 for (let row = 0; row < levelData.length; row++) {
@@ -47,6 +49,8 @@ for (let row = 0; row < levelData.length; row++) {
       // Calculate tile x, y from grid pos
       const xPos = col * TILE_SIZE;
       const yPos = row * TILE_SIZE;
+      console.log(xPos)
+      console.log(yPos)
 
       // Check the tile type and add appropriate bodies to the world
       if (tileType !== Tiles.Blank) {
@@ -118,7 +122,7 @@ for (let row = 0; row < levelData.length; row++) {
   //   playerGroundCheck(event, false);
   // })
   
-  Events.on(engine, "afterTick", function(event) {
+  Events.on(engine, "afterTick", function() {
     // Check if player and playerSensor are defined
     if (player && playerSensor) {
         //set sensor velocity to zero so it collides properly
@@ -134,7 +138,7 @@ for (let row = 0; row < levelData.length; row++) {
     };
 });
   
-Events.on(engine, "beforeUpdate", function(event) {
+Events.on(engine, "beforeUpdate", function() {
   if (player && playerSensor) {
     game.cycle++;
     console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
@@ -143,7 +147,6 @@ Events.on(engine, "beforeUpdate", function(event) {
         console.log("Jumping!");
         player.jumpCD = game.cycle + 1; // Adds a cooldown to jump
         Body.applyForce(player, player.position, { x: 0, y: -0.02 });
-        console.log("Applied jump force: {x: 0, y: -0.02}");
     } else if (keys["ArrowUp"] && !player.ground) {
         console.log("Jump attempt failed, player is not grounded.");
     }
@@ -153,11 +156,9 @@ Events.on(engine, "beforeUpdate", function(event) {
     if (keys["ArrowLeft"]) {
         console.log("Moving left!");
         Body.applyForce(player, player.position, { x: -moveForce, y: 0 });
-        console.log("Applied leftward force: {x: -moveForce, y: 0}");
     } else if (keys["ArrowRight"]) {
         console.log("Moving right!");
         Body.applyForce(player, player.position, { x: moveForce, y: 0 });
-        console.log("Applied rightward force: {x: moveForce, y: 0}");
     }
   }
  });
