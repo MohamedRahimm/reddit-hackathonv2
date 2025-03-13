@@ -1,133 +1,221 @@
-// import Character from "../Character/Character";
-// import * as levelCSS from "./levelCSS"
-import * as levelGen from "./levelGen";
+import Matter from "matter-js";
+  
+function rotateVector(vector, angle) {
+    return {
+      x: vector.x * Math.cos(angle) - vector.y * Math.sin(angle),
+      y: vector.x * Math.sin(angle) + vector.y * Math.cos(angle)
+    }
+  }
+  
+  
+  //game objects values
+  var game = {
+    cycle: 0,
+    width: 1200,
+    height: 800,
+  }
+  
+  var Engine = Matter.Engine,
+    Render = Matter.Render,
+    World = Matter.World,
+    Events = Matter.Events,
+    Body = Matter.Body,
+    //Composites = Matter.Composites,
+    Bodies = Matter.Bodies;
+  
+  // create an engine
+  var engine = Engine.create();
+  
+  var render = Render.create({
+    element: document.body,
+    engine: engine,
+    options: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pixelRatio: 1,
+      background: 'rgba(255, 0, 0, 0.0)',
+      wireframeBackground: '#222',
+    //   enabled: true,
+      wireframes: false,
+      showVelocity: false,
+      showAngleIndicator: true,
+      showCollisions: false,
+    }
+  });
+  
+  //add the walls
+  var offset = 5;
+  World.add(engine.world, [
+    Bodies.rectangle(400, -offset, game.width * 2 + 2 * offset, 50, {
+      isStatic: true
+    }),
+    Bodies.rectangle(400, game.height + offset, game.width * 2 + 2 * offset, 50, {
+      isStatic: true
+    }),
+    Bodies.rectangle(game.width + offset, 300, 50, game.height * 2 + 2 * offset, {
+      isStatic: true
+    }),
+    Bodies.rectangle(-offset, 300, 50, game.height * 2 + 2 * offset, {
+      isStatic: true
+    })
+  ]);
+  
+  // add some ramps to the world for the bodies to roll down
+  World.add(engine.world, [
+    //Bodies.rectangle(200, 150, 700, 20, { isStatic: true, angle: Math.PI * 0.06 }),
+    Bodies.rectangle(620, 270, 1000, 50, {
+      isStatic: true,
+      angle: -Math.PI * 0.1
+    }),
+    Bodies.rectangle(260, 780, 700, 300, {
+      isStatic: true,
+      angle: Math.PI * 0.15
+    }),
+    Bodies.rectangle(1050, 750, 600, 100, {
+      isStatic: true,
+      //angle: -Math.PI * 0.1
+    }),
+  ]);
+  
+  //adds some balls
+  for(var i = 0; i<35;i++){
+    World.add(engine.world, Bodies.circle(400,200,Math.ceil(6+Math.random()*22),{
+      density: 0.0005,
+      friction: 0,//0.05,
+      frictionStatic: 0.5,
+      frictionAir: 0.001,
+      restitution: 0.5,
+      render:{
+        strokeStyle:'darkgrey',
+        fillStyle:'grey'
+      },
+    })
+  )}
+  
+  //add the player
+  //Extends the Matter.Body class to add custom properties
+  interface PlayerBody extends Matter.Body {
+    ground: boolean;
+    jumpCD: number;
+  }
 
-var playerCharacter
-var myObstacle
-var gameArea = {
-    canvas : document.createElement("canvas"),
-    context: null as CanvasRenderingContext2D | null,
-    start : function() {
-        this.canvas.width = 480;
-        this.canvas.height = 270;
-        this.context = this.canvas.getContext("2d");
-        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-        this.interval = setInterval(updateGameArea, 30);
+  const playerRadius = 25;
+  var player = Bodies.circle(800, game.height - 200, playerRadius, {
+    density: 0.001,
+    friction: 0.7,
+    frictionStatic: 0,
+    frictionAir: 0.005,
+    restitution: 0.3,
+    collisionFilter: {
+        category: 1,
+        group: 1,
+        mask: 1,
     },
-    clear : function() {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    render: {
+        strokeStyle: 'black',
+        fillStyle: 'lightgrey',
+    },
+}) as PlayerBody;
+// Sets custom PlayerBody class properties
+player.ground = false;
+player.jumpCD = 0;
+
+  
+  
+  //this sensor check if the player is on the ground to enable jumping
+  var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
+    isSensor: true,
+    render:{
+      visible: false
+    },
+    //isStatic: true,
+  })
+  playerSensor.collisionFilter.group = -1
+  
+  //populate world
+  World.add(engine.world, [player, playerSensor]);
+  
+  //looks for key presses and logs them
+  var keys: { [key: string]: boolean } = {};
+  document.body.addEventListener("keydown", function(e) {
+    keys[e.code] = true;
+    // console.log(`Key down: ${e.code}`);
+  });
+  document.body.addEventListener("keyup", function(e) {
+    keys[e.code] = false;
+    // console.log(`Key up: ${e.code}`);
+  });
+  
+  function playerGroundCheck(event, ground) { //runs on collisions events
+    var pairs = event.pairs
+    for (var i = 0, j = pairs.length; i != j; ++i) {
+      var pair = pairs[i];
+      if (pair.bodyA === playerSensor) {
+        player.ground = ground;
+      } else if (pair.bodyB === playerSensor) {
+        player.ground = ground;
+      }
     }
-}
-
-
-function startGame() {
-    playerCharacter = new component(20, 30, "red", 64, 128)
-    gameArea.start();
-}
-
-
-
-function component(width: Number, height: Number, color: String, x: Number, y: Number) {
-    this.width = width;
-    this.height = height;
-    this.speedX = 0;
-    this.speedY = 0;    
-    this.x = x;
-    this.y = y;    
-    this.update = function() {
-        const ctx = gameArea.context;
-        if (ctx) { // Check if ctx is defined
-            ctx.fillStyle = color;
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-        }
+  }
+  
+  
+  
+  //at the start of a colision for player
+  Events.on(engine, "collisionStart", function(event) {
+    playerGroundCheck(event, true)
+  });
+  //ongoing checks for collisions for player
+  Events.on(engine, "collisionActive", function(event) {
+    playerGroundCheck(event, true)
+  });
+  //at the end of a colision for player set ground to false
+  Events.on(engine, 'collisionEnd', function(event) {
+    playerGroundCheck(event, false);
+  })
+  
+  Events.on(engine, "afterTick", function(event) {
+    //set sensor velocity to zero so it collides properly
+    Matter.Body.setVelocity(playerSensor, {
+        x: 0,
+        y: 0
+      })
+      //move sensor to below the player
+    Body.setPosition(playerSensor, {
+      x: player.position.x,
+      y: player.position.y + playerRadius
+    });
+  });
+  
+Events.on(engine, "beforeUpdate", function(event) {
+    game.cycle++;
+    console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
+    // Jump
+    if (keys["ArrowUp"] && player.ground && player.jumpCD < game.cycle) {
+        console.log("Jumping!");
+        player.jumpCD = game.cycle + 10; // Adds a cooldown to jump
+        Body.applyForce(player, player.position, { x: 0, y: -0.07 });
+        console.log("Applied jump force: {x: 0, y: -0.07}");
+    } else if (keys["ArrowUp"] && !player.ground) {
+        console.log("Jump attempt failed, player is not grounded.");
     }
-    this.newPos = function() {
-        this.x += this.speedX;
-        this.y += this.speedY;        
-    }    
-}
+    // Spin left and right
+    const moveForce = 0.005; // Adjust for speed control
 
-function updateGameArea() {
-    gameArea.clear();
-    console.log("Updating")
-    // myObstacle.update();
-    playerCharacter.newPos();    
-    playerCharacter.update();
-}
-
-// export default function Level() {
-//     const [characterPos, setCharacterPos] = useState({ x: 0, y: 0, size: 0 });
-//     const [isMoving, setIsMoving] = useState(false);
-//     const [isFalling, setIsFalling] = useState(true);
-
-//     const updateCharacterPosition = () => {
-//         const doorElement = document.getElementById("door");
-//         if (doorElement) {
-//             const rect = doorElement.getBoundingClientRect();
-//             setCharacterPos({ x: rect.x, y: rect.y, size: rect.width });
-//         }
-//     };
-
-//     useEffect(() => {
-//         updateCharacterPosition();
-//         window.addEventListener("resize", updateCharacterPosition);
-//         return () => window.removeEventListener("resize", updateCharacterPosition);
-//     }, []);
-
-//     useEffect(() => {
-//         if (!isMoving) return;
-
-//         const moveCharacter = setInterval(() => {
-//             const characterElement = document.getElementById("character");
-//             if (!characterElement) return;
-
-//             const rect = characterElement.getBoundingClientRect();
-//             const nextY = rect.y + 5;
-//             const belowTile = document.elementFromPoint(rect.x + 5, nextY + rect.height);
-//             if (belowTile && belowTile.id) {
-//                 setIsFalling(false);
-//             } else {
-//                 setIsFalling(true);
-//                 setCharacterPos(prev => ({ ...prev, y: prev.y + 5 }));
-//                 return;
-//             }
-
-//             if (!isFalling) {
-//                 const nextX = rect.x + 5;
-//                 const frontTile = document.elementFromPoint(nextX + rect.width, rect.y + rect.height / 2);
-
-//                 if (!frontTile || !frontTile.id) {
-//                     setCharacterPos(prev => ({ ...prev, x: prev.x + 5 }));
-//                 }
-//             }
-//         }, 1000 / 60);
-
-//         return () => clearInterval(moveCharacter);
-//     }, [isMoving, isFalling]);
-
-
-//     return (
-//         <div
-//             id="grid"
-//             onClick={() => setIsMoving(true)}
-//             style={{
-
-//                 gridTemplateColumns: `repeat(${levelData[0].length}, 1fr)`,
-//                 gridTemplateRows: `repeat(${levelData.length}, 1fr)`,
-//             }}
-//         >
-//             {levelData.flat().map((tile, index) => (
-//                 <div
-//                     id={tile === Tiles.Door ? "door" : tile !== Tiles.Blank ? `tile-${index}` : undefined}
-//                     className="tile"
-//                     key={index}
-//                     style={{
-//                         backgroundColor: tile === Tiles.Floor ? "red" : tile === Tiles.Door ? "yellow" : tile === Tiles.Exit ? "blue" : "transparent",
-//                         border: tile === Tiles.Blank ? "none" : "1px solid black",
-//                     }}
-//                 />
-//             ))}
-//             <Character position={characterPos} />
-//         </div>
-//     );
-// };
+    if (keys["ArrowLeft"]) {
+        console.log("Moving left!");
+        Body.applyForce(player, player.position, { x: -moveForce, y: 0 });
+        console.log("Applied leftward force: {x: -moveForce, y: 0}");
+    } else if (keys["ArrowRight"]) {
+        console.log("Moving right!");
+        Body.applyForce(player, player.position, { x: moveForce, y: 0 });
+        console.log("Applied rightward force: {x: moveForce, y: 0}");
+    }
+  });
+  
+  // run the engine
+  var runner = Matter.Runner.create();
+  Matter.Runner.run(runner, engine);
+  
+  // run the renderer
+  Render.run(render);
+  

@@ -4,12 +4,21 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="stylesheet" href="./components/Level/level.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Devvit</title>
 </head>
 
 <body>
-    <script type="module" src="./components/Level/levelGen.ts"></script>
+    <svg height = '800' width = '1200'>
+        <g id="grid" stroke="#f2f2f2">
+        <line x1="0" y1="0" x2="3000" y2="0" style="stroke-dasharray:1,58,1,0;stroke-width:3000;"/>
+        <line x1="0" y1="0" x2="0" y2="3000" style="stroke-dasharray:1,58,1,0;stroke-width:3000;"/>
+      </g>
+      </svg>
+      <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Controls: arrow keys
+    <script type="module" src="./components/Level/level.ts"></script>
 </body>
 
 </html>
