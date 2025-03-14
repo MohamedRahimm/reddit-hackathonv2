@@ -49,14 +49,12 @@ for (let row = 0; row < levelData.length; row++) {
       // Calculate tile x, y from grid pos
       const xPos = col * TILE_SIZE;
       const yPos = row * TILE_SIZE;
-      console.log(xPos)
-      console.log(yPos)
 
       // Check the tile type and add appropriate bodies to the world
       if (tileType !== Tiles.Blank) {
           const tile = Bodies.rectangle(xPos, yPos, TILE_SIZE, TILE_SIZE, { 
               isStatic: true, // Non-movable object
-              label: tileType  // Tile name
+              label: JSON.stringify([`(${row}, ${col})`, tileType.toString()]),
           });
           World.add(engine.world, tile);
       } 
@@ -67,22 +65,6 @@ for (let row = 0; row < levelData.length; row++) {
   }
 }
   
-
-  //adds some balls 🤌
-  // for(var i = 0; i<35;i++){
-  //   World.add(engine.world, Bodies.circle(400,200,Math.ceil(6+Math.random()*22),{
-  //     density: 0.0005,
-  //     friction: 0,//0.05,
-  //     frictionStatic: 0.5,
-  //     frictionAir: 0.001,
-  //     restitution: 0.5,
-  //     render:{
-  //       strokeStyle:'darkgrey',
-  //       fillStyle:'grey'
-  //     },
-  //   })
-  // )}
-
   
   //looks for key presses and logs them
   var keys: { [key: string]: boolean } = {};
@@ -95,35 +77,8 @@ for (let row = 0; row < levelData.length; row++) {
     // console.log(`Key up: ${e.code}`);
   });
   
-  // function playerGroundCheck(event:Matter.ICollisionEvent, ground: boolean) { //runs on collisions events
-  //   var pairs = event.pairs
-  //   for (var i = 0, j = pairs.length; i != j; ++i) {
-  //     var pair = pairs[i];
-  //     if (pair.bodyA === playerSensor) {
-  //       player.ground = ground;
-  //     } else if (pair.bodyB === playerSensor) {
-  //       player.ground = ground;
-  //     }
-  //   }
-  // }
-  
-  
-  
-  // //at the start of a colision for player
-  // Events.on(engine, "collisionStart", function(event) {
-  //   playerGroundCheck(event, true)
-  // });
-  // //ongoing checks for collisions for player
-  // Events.on(engine, "collisionActive", function(event) {
-  //   playerGroundCheck(event, true)
-  // });
-  // //at the end of a colision for player set ground to false
-  // Events.on(engine, 'collisionEnd', function(event) {
-  //   playerGroundCheck(event, false);
-  // })
-  
-  Events.on(engine, "afterTick", function() {
-    // Check if player and playerSensor are defined
+
+  Events.on(engine, "afterUpdate", function() {
     if (player && playerSensor) {
         //set sensor velocity to zero so it collides properly
         Matter.Body.setVelocity(playerSensor, {
@@ -131,6 +86,7 @@ for (let row = 0; row < levelData.length; row++) {
             y: 0
         });
         //move sensor to below the player
+        console.log("Moving sensor to player")
         Body.setPosition(playerSensor, {
             x: player.position.x,
             y: player.position.y + playerRadius
@@ -138,21 +94,73 @@ for (let row = 0; row < levelData.length; row++) {
     };
 });
   
+Events.on(engine, 'collisionEnd', (event) => {
+  const pairs = event.pairs;
+  
+
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
+    const bodyA = pair.bodyA;
+    const bodyB = pair.bodyB;
+
+    // Check if the collision involves the player sensor (Body A) and a floor (Body B)
+    if (bodyA === playerSensor && JSON.parse(bodyB.label)[1] === 'Floor') {
+      console.log('Player sensor left floor (collisionEnd):');
+      console.log('  Body A (sensor):', bodyA);
+      console.log('  Body B (floor):', bodyB);
+      player.ground = false
+    }
+    // Check if the collision involves the player sensor (Body B) and a floor (Body A)
+    else if (bodyB === playerSensor && JSON.parse(bodyA.label)[1] === 'Floor'){
+        console.log('Player sensor left floor (collisionEnd):');
+        console.log('  Body A (floor):', bodyA);
+        console.log('  Body B (sensor):', bodyB);
+        player.ground = false
+    }
+  }
+});
+
+Events.on(engine, 'collisionStart', (event) => {
+  
+  const pairs = event.pairs;
+
+
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
+    const bodyA = pair.bodyA;
+    const bodyB = pair.bodyB;
+
+    // Check if the collision involves the player sensor (Body A) and a floor (Body B)
+    if (bodyA === playerSensor && JSON.parse(bodyB.label)[1] === 'Floor') {
+      console.log('Player sensor left floor (collisionEnd):');
+      console.log('  Body A (sensor):', bodyA);
+      console.log('  Body B (floor):', bodyB);
+      player.ground = true
+    }
+    // Check if the collision involves the player sensor (Body B) and a floor (Body A)
+    else if (bodyB === playerSensor && JSON.parse(bodyA.label)[1] === 'Floor'){
+        console.log('Player sensor left floor (collisionEnd):');
+        console.log('  Body A (floor):', bodyA);
+        console.log('  Body B (sensor):', bodyB);
+        player.ground = true
+    }
+  }
+});
+
 Events.on(engine, "beforeUpdate", function() {
   if (player && playerSensor) {
     game.cycle++;
-    console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
+    // console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
     // Jump
     if (keys["ArrowUp"] && player.ground && player.jumpCD < game.cycle) {
         console.log("Jumping!");
         player.jumpCD = game.cycle + 1; // Adds a cooldown to jump
-        Body.applyForce(player, player.position, { x: 0, y: -0.02 });
+        Body.applyForce(player, player.position, { x: 0, y: -0.01 });
     } else if (keys["ArrowUp"] && !player.ground) {
         console.log("Jump attempt failed, player is not grounded.");
     }
     // Horizontal movement
-    const moveForce = 0.005; // Adjust for movement speed
-
+    const moveForce = 0.0005; // Adjust for movement speed
     if (keys["ArrowLeft"]) {
         console.log("Moving left!");
         Body.applyForce(player, player.position, { x: -moveForce, y: 0 });

@@ -16,8 +16,9 @@ interface PlayerBody extends Matter.Body {
 
 export const playerRadius: number = 25;
 export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRadius, {
+    label: "character",
     density: 0.001,
-    friction: 0.25,
+    friction: 0,
     frictionStatic: 0,
     frictionAir: 0,
     restitution: 0,
@@ -36,13 +37,13 @@ export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRad
 player.ground = false;
 player.jumpCD = 0;
 
-  //this sensor check if the player is on the ground to enable jumping
+  // onGround sensor for jumping
   export var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
+    label: "sensor",
     isSensor: true,
     render:{
       visible: false
     },
-    //isStatic: true,
   })
   playerSensor.collisionFilter.group = -1
 
