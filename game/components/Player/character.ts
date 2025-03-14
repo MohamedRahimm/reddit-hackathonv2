@@ -41,6 +41,10 @@ player.jumpCD = 0;
   export var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
     label: "sensor",
     isSensor: true,
+    friction: 0,
+    frictionStatic: 0,
+    frictionAir: 0,
+    inertia: Infinity,
     render:{
       visible: false
     },

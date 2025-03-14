@@ -3,13 +3,20 @@ import { levelData, TILE_SIZE, Tiles } from "./levelGen";
 import { player, playerRadius, playerSensor } from "../Player/character";
 
 
-
 //game objects values
 var game = {
   cycle: 0,
   width: levelData[0].length * TILE_SIZE,
   height: levelData.length * TILE_SIZE,
   }
+
+  // X Velocity to maintain
+const fixedSpeed = 1.3;
+
+// ensure player has no friction
+player.friction = 0;
+player.frictionAir = 0;
+player.frictionStatic = 0;
   
 const Engine = Matter.Engine;
 const Render = Matter.Render;
@@ -53,6 +60,9 @@ for (let row = 0; row < levelData.length; row++) {
       // Check the tile type and add appropriate bodies to the world
       if (tileType !== Tiles.Blank) {
           const tile = Bodies.rectangle(xPos, yPos, TILE_SIZE, TILE_SIZE, { 
+              friction: 0, // No friction
+              frictionAir: 0, // No air friction
+              frictionStatic: 0, // no static friction
               isStatic: true, // Non-movable object
               label: JSON.stringify([`(${row}, ${col})`, tileType.toString()]),
           });
@@ -159,17 +169,28 @@ Events.on(engine, "beforeUpdate", function() {
     } else if (keys["ArrowUp"] && !player.ground) {
         console.log("Jump attempt failed, player is not grounded.");
     }
-    // Horizontal movement
-    const moveForce = 0.0005; // Adjust for movement speed
+
+    console.log(`Player Velocity: ${player.velocity.x}`);
+
+    let moveDirection = 1;
+    // moving player left or right, as long as they are not exceeding maximum x velocity (1.5)
     if (keys["ArrowLeft"]) {
         console.log("Moving left!");
-        Body.applyForce(player, player.position, { x: -moveForce, y: 0 });
+        moveDirection = -1;
     } else if (keys["ArrowRight"]) {
         console.log("Moving right!");
-        Body.applyForce(player, player.position, { x: moveForce, y: 0 });
+        moveDirection = 1;
+    } else {
+      moveDirection = player.velocity.x > 0 ? 1 : -1;
+    }
+    console.log(`Player Velocity: ${player.velocity.x}`);
+    console.log(`Move Direction: ${moveDirection}`);
+
+        // Set velocity to fixed speed
+    Body.setVelocity(player, { x: moveDirection * fixedSpeed, y: player.velocity.y });
     }
   }
- });
+ );
   
   // Add player and collision sensor to world
   World.add(engine.world, [player, playerSensor]);
