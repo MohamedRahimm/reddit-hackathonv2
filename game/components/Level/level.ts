@@ -3,7 +3,7 @@ import { player, playerRadius, playerSensor } from '../Player/character';
 import { levelData, TILE_SIZE, Tiles, engine, World } from './levelGen';
 
 // X Velocity to maintain
-const fixedSpeed = 0.3;
+const fixedSpeed = 0.9;
 
 // ensure player has no friction
 player.friction = 0;
@@ -62,11 +62,7 @@ Events.on(engine, 'afterUpdate', function () {
   }
 });
 
-function cameraDebug() {
-  console.log(Matter.Body.scale)
-}
 
-cameraDebug()
 
 function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Engine>) {
   const pairs = event.pairs;
@@ -104,7 +100,7 @@ Events.on(engine, 'beforeUpdate', function () {
     // Jump
     if (keys['ArrowUp'] && player.plugin.ground) {
       console.log('Jumping!');
-      Body.applyForce(player, player.position, { x: 0, y: -0.005 });
+      Body.applyForce(player, player.position, { x: 0, y: -0.003 });
     } else if (keys['ArrowUp'] && !player.plugin.ground) {
       console.log('Jump attempt failed, player is not grounded.');
     }
@@ -132,7 +128,7 @@ Events.on(engine, 'beforeUpdate', function () {
 
 // Add player and collision sensor to world
 // World.add(engine.world, [player, playerSensor]);
-World.add(engine.world, [player]);
+World.add(engine.world, [player, playerSensor]);
 
 // run the engine
 var runner = Matter.Runner.create();

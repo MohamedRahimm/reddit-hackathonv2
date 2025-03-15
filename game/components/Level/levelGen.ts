@@ -96,6 +96,7 @@ function createOuterWalls () {
     frictionAir: 0, // No air friction
     frictionStatic: 0, // No static friction
     isStatic: true, // Non-movable object
+    label: "Floor",
     collisionFilter: {},
   }
   const roof = Matter.Bodies.rectangle(levelWidthPx/2, levelOffsetPx, levelWidthPx, TILE_SIZE, params);
