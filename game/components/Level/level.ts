@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { player, playerRadius, playerSensor } from '../Player/character';
-import { levelData, TILE_SIZE, Tiles } from './levelGen';
+import { levelData, TILE_SIZE, Tiles, engine, World } from './levelGen';
 
 // X Velocity to maintain
 const fixedSpeed = 0.3;
@@ -12,13 +12,11 @@ player.frictionStatic = 0;
 
 const Engine = Matter.Engine;
 const Render = Matter.Render;
-const World = Matter.World;
 const Events = Matter.Events;
 const Body = Matter.Body;
 const Bodies = Matter.Bodies;
 
-// create an engine
-var engine = Engine.create();
+
 var render = Render.create({
   element: document.body,
   engine: engine,
@@ -27,6 +25,7 @@ var render = Render.create({
     height: window.innerHeight,
     pixelRatio: window.devicePixelRatio,
     background: 'rgba(16, 5, 28, 0.84)',
+
     wireframeBackground: '#222',
     // wireframes: false,
     showVelocity: false,
@@ -34,37 +33,7 @@ var render = Render.create({
     showCollisions: true,
   },
 });
-// Adds walls and objects to level
-for (let row = 0; row < levelData.length; row++) {
-  for (let col = 0; col < levelData[row].length; col++) {
-    const tileType = levelData[row][col];
 
-    // Calculate tile x, y from grid pos
-    const xPos = col * TILE_SIZE + TILE_SIZE / 2;
-    const yPos = row * TILE_SIZE + TILE_SIZE / 2;
-
-    // Check the tile type and add appropriate bodies to the world
-    if (tileType !== Tiles.Blank) {
-      const params = {
-        friction: 0, // No friction
-        frictionAir: 0, // No air friction
-        frictionStatic: 0, // no static friction
-        isStatic: true, // Non-movable object
-        label: tileType.toString() + ' ' + row + col,
-        collisionFilter: {},
-      } as Matter.IChamferableBodyDefinition;
-      if (tileType === Tiles.Door) {
-        params.collisionFilter = {
-          category: 0x0002, // Unique category for doors
-          mask: 0x0004, // Only collides with specific objects (not the player)
-        };
-      }
-      //   console.log(params.friction, params.label);
-      const tile = Bodies.rectangle(xPos, yPos, TILE_SIZE, TILE_SIZE, params);
-      World.add(engine.world, tile);
-    }
-  }
-}
 
 //looks for key presses and logs them
 var keys: { [key: string]: boolean } = {};
@@ -92,6 +61,12 @@ Events.on(engine, 'afterUpdate', function () {
     });
   }
 });
+
+function cameraDebug() {
+  console.log(Matter.Body.scale)
+}
+
+cameraDebug()
 
 function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Engine>) {
   const pairs = event.pairs;

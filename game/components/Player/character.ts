@@ -29,9 +29,9 @@ export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRad
   friction: 0,
   frictionStatic: 0,
   frictionAir: 0,
-  slop: 0,
+  slop: -1.0,
   //   restitution: 0,
-  //   inertia: 0,
+  inertia: 0,
   collisionFilter: {
     category: 0x0001, // Player category
     mask: 0xffff & ~0x0002, // Collides with everything except the door
