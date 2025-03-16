@@ -12,6 +12,7 @@ function findDoorPosition(levelData: Tiles[][]): { x: number; y: number } {
   }
   // If no door is found, return a default position
   return { x: 2, y: 2 };
+  console.log("No door found")
 }
 const doorPos = findDoorPosition(levelData);
 const playerX = doorPos.x * TILE_SIZE + TILE_SIZE / 2;
@@ -29,9 +30,9 @@ export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRad
   friction: 0,
   frictionStatic: 0,
   frictionAir: 0,
-  slop: -1.0,
+  slop: -1,
   //   restitution: 0,
-  inertia: 0,
+  //   inertia: 0,
   collisionFilter: {
     category: 0x0001, // Player category
     mask: 0xffff & ~0x0002, // Collides with everything except the door
