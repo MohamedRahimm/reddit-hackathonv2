@@ -1,6 +1,6 @@
 import Matter from 'matter-js';
 import { player, playerRadius, playerSensor } from '../Player/character';
-import { levelData, TILE_SIZE, Tiles, engine, World } from './levelGen';
+import { engine, World } from './levelGen';
 
 // X Velocity to maintain
 const fixedSpeed = 0.9;
@@ -15,7 +15,6 @@ const Render = Matter.Render;
 const Events = Matter.Events;
 const Body = Matter.Body;
 const Bodies = Matter.Bodies;
-
 
 var render = Render.create({
   element: document.body,
@@ -33,7 +32,6 @@ var render = Render.create({
     showCollisions: true,
   },
 });
-
 
 //looks for key presses and logs them
 var keys: { [key: string]: boolean } = {};
@@ -61,8 +59,6 @@ Events.on(engine, 'afterUpdate', function () {
     });
   }
 });
-
-
 
 function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Engine>) {
   const pairs = event.pairs;
@@ -94,6 +90,7 @@ Events.on(engine, 'collisionStart', (event) => {
   player.plugin.ground = checkCollision(true, event);
 });
 
+let moveDirection = 1;
 Events.on(engine, 'beforeUpdate', function () {
   if (player && playerSensor) {
     // console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
@@ -107,7 +104,6 @@ Events.on(engine, 'beforeUpdate', function () {
 
     // console.log(`Player Velocity: ${player.velocity.x}`);
 
-    let moveDirection = 1;
     // moving player left or right, as long as they are not exceeding maximum x velocity (1.5)
     if (keys['ArrowLeft']) {
       //   console.log('Moving left!');
@@ -115,8 +111,6 @@ Events.on(engine, 'beforeUpdate', function () {
     } else if (keys['ArrowRight']) {
       //   console.log('Moving right!');
       moveDirection = 1;
-    } else {
-      moveDirection = player.velocity.x > 0 ? 1 : -1;
     }
     // console.log(`Player Velocity: ${player.velocity.x}`);
     // console.log(`Move Direction: ${moveDirection}`);
