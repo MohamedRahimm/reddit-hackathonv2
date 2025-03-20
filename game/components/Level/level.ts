@@ -1,173 +1,287 @@
-import Matter from "matter-js";
-import { levelData, TILE_SIZE, Tiles } from "./levelGen";
-import { player, playerRadius, playerSensor } from "../Player/character";
+import Matter, { Composite, Mouse, MouseConstraint } from 'matter-js';
+import { player, playerRadius, playerSensor } from '../Player/character';
+import { engine, levelData, TILE_SIZE, Tiles, World } from './levelGen';
 
+// X Velocity to maintain
+const fixedSpeed = 0.9;
 
+// ensure player has no friction
+player.friction = 0;
+player.frictionAir = 0;
+player.frictionStatic = 0;
 
-//game objects values
-var game = {
-  cycle: 0,
-  width: levelData[0].length * TILE_SIZE,
-  height: levelData.length * TILE_SIZE,
-  }
-  
-const Engine = Matter.Engine;
 const Render = Matter.Render;
-const World = Matter.World;
 const Events = Matter.Events;
 const Body = Matter.Body;
 const Bodies = Matter.Bodies;
 
-// create an engine
-var engine = Engine.create();
 var render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    pixelRatio: window.devicePixelRatio,
+    width: TILE_SIZE * 9,
+    height: TILE_SIZE * 6,
     background: 'rgba(16, 5, 28, 0.84)',
+
+    wireframeBackground: '#222',
     wireframes: false,
     showVelocity: false,
-    showAngleIndicator: true,
+    // showAngleIndicator: true,
     showCollisions: true,
-  }
-});
-Render.lookAt(render, {
-  min: { x: -50, y: -50 },
-  max: { x: levelData[0].length * TILE_SIZE, y: levelData.length * TILE_SIZE },
+  },
 });
 
-// Adds walls and objects to level
-for (let row = 0; row < levelData.length; row++) {
-  for (let col = 0; col < levelData[row].length; col++) {
-      const tileType = levelData[row][col];
-
-      // Calculate tile x, y from grid pos
-      const xPos = col * TILE_SIZE;
-      const yPos = row * TILE_SIZE;
-      console.log(xPos)
-      console.log(yPos)
-
-      // Check the tile type and add appropriate bodies to the world
-      if (tileType !== Tiles.Blank) {
-          const tile = Bodies.rectangle(xPos, yPos, TILE_SIZE, TILE_SIZE, { 
-              isStatic: true, // Non-movable object
-              label: tileType  // Tile name
-          });
-          World.add(engine.world, tile);
-      } 
-      // Optionally, handle other tile types (e.g., Blank) if needed
-      else if (tileType === Tiles.Blank) {
-          // No body is added for blank tiles (or handle them differently if needed)
-      }
-  }
-}
-  
-
-  //adds some balls 🤌
-  // for(var i = 0; i<35;i++){
-  //   World.add(engine.world, Bodies.circle(400,200,Math.ceil(6+Math.random()*22),{
-  //     density: 0.0005,
-  //     friction: 0,//0.05,
-  //     frictionStatic: 0.5,
-  //     frictionAir: 0.001,
-  //     restitution: 0.5,
-  //     render:{
-  //       strokeStyle:'darkgrey',
-  //       fillStyle:'grey'
-  //     },
-  //   })
-  // )}
-
-  
-  //looks for key presses and logs them
-  var keys: { [key: string]: boolean } = {};
-  document.body.addEventListener("keydown", function(e) {
-    keys[e.code] = true;
-    // console.log(`Key down: ${e.code}`);
-  });
-  document.body.addEventListener("keyup", function(e) {
-    keys[e.code] = false;
-    // console.log(`Key up: ${e.code}`);
-  });
-  
-  // function playerGroundCheck(event:Matter.ICollisionEvent, ground: boolean) { //runs on collisions events
-  //   var pairs = event.pairs
-  //   for (var i = 0, j = pairs.length; i != j; ++i) {
-  //     var pair = pairs[i];
-  //     if (pair.bodyA === playerSensor) {
-  //       player.ground = ground;
-  //     } else if (pair.bodyB === playerSensor) {
-  //       player.ground = ground;
-  //     }
-  //   }
-  // }
-  
-  
-  
-  // //at the start of a colision for player
-  // Events.on(engine, "collisionStart", function(event) {
-  //   playerGroundCheck(event, true)
-  // });
-  // //ongoing checks for collisions for player
-  // Events.on(engine, "collisionActive", function(event) {
-  //   playerGroundCheck(event, true)
-  // });
-  // //at the end of a colision for player set ground to false
-  // Events.on(engine, 'collisionEnd', function(event) {
-  //   playerGroundCheck(event, false);
-  // })
-  
-  Events.on(engine, "afterTick", function() {
-    // Check if player and playerSensor are defined
-    if (player && playerSensor) {
-        //set sensor velocity to zero so it collides properly
-        Matter.Body.setVelocity(playerSensor, {
-            x: 0,
-            y: 0
-        });
-        //move sensor to below the player
-        Body.setPosition(playerSensor, {
-            x: player.position.x,
-            y: player.position.y + playerRadius
-        });
-    };
+//looks for key presses and logs them
+var keys: { [key: string]: boolean } = {};
+document.body.addEventListener('keydown', function (e) {
+  keys[e.code] = true;
+  // console.log(`Key down: ${e.code}`);
 });
-  
-Events.on(engine, "beforeUpdate", function() {
+document.body.addEventListener('keyup', function (e) {
+  keys[e.code] = false;
+  // console.log(`Key up: ${e.code}`);
+});
+
+Events.on(engine, 'afterUpdate', function () {
   if (player && playerSensor) {
-    game.cycle++;
-    console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
-    // Jump
-    if (keys["ArrowUp"] && player.ground && player.jumpCD < game.cycle) {
-        console.log("Jumping!");
-        player.jumpCD = game.cycle + 1; // Adds a cooldown to jump
-        Body.applyForce(player, player.position, { x: 0, y: -0.02 });
-    } else if (keys["ArrowUp"] && !player.ground) {
-        console.log("Jump attempt failed, player is not grounded.");
-    }
-    // Horizontal movement
-    const moveForce = 0.005; // Adjust for movement speed
+    //set sensor velocity to zero so it collides properly
+    Matter.Body.setVelocity(playerSensor, {
+      x: 0,
+      y: 0,
+    });
+    //move sensor to below the player
+    // console.log('Moving sensor to player');
+    Body.setPosition(playerSensor, {
+      x: player.position.x,
+      y: player.position.y + playerRadius,
+    });
+  }
+});
 
-    if (keys["ArrowLeft"]) {
-        console.log("Moving left!");
-        Body.applyForce(player, player.position, { x: -moveForce, y: 0 });
-    } else if (keys["ArrowRight"]) {
-        console.log("Moving right!");
-        Body.applyForce(player, player.position, { x: moveForce, y: 0 });
+function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Engine>) {
+  const pairs = event.pairs;
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
+    const bodyA = pair.bodyA;
+    const bodyB = pair.bodyB;
+    console.log(`  Body B ${bodyB.label}, Body A ${bodyA.label}`);
+
+    if (
+      (bodyA.label === 'Sensor' && bodyB.label.includes('Floor')) ||
+      (bodyA.label.includes('Floor') && bodyB.label === 'Sensor')
+    ) {
+      //   console.log(`Player sensor left floor ${start === true ? 'collisionEnd' : 'collisionStart'}`);
+      //   console.log(`  Body A ${bodyA.label}`);
+      if (!start) {
+        return false;
+      }
     }
   }
- });
-  
-  // Add player and collision sensor to world
-  World.add(engine.world, [player, playerSensor]);
+  return true;
+}
 
-  // run the engine
-  var runner = Matter.Runner.create();
-  Matter.Runner.run(runner, engine);
-  
-  // run the renderer
-  Render.run(render);
-  
+Events.on(engine, 'collisionEnd', (event) => {
+  player.plugin.ground = checkCollision(false, event);
+});
+
+Events.on(engine, 'collisionStart', (event) => {
+  player.plugin.ground = checkCollision(true, event);
+});
+
+let moveDirection = 1;
+Events.on(engine, 'beforeUpdate', function () {
+  if (player && playerSensor) {
+    // console.log(`Player Grounded: ${player.ground}, JumpCD: ${player.jumpCD}`);
+    // Jump
+    if (keys['ArrowUp'] && player.plugin.ground) {
+      console.log('Jumping!');
+      Body.applyForce(player, player.position, { x: 0, y: -0.003 });
+    } else if (keys['ArrowUp'] && !player.plugin.ground) {
+      console.log('Jump attempt failed, player is not grounded.');
+    }
+
+    // console.log(`Player Velocity: ${player.velocity.x}`);
+
+    // moving player left or right, as long as they are not exceeding maximum x velocity (1.5)
+    if (keys['ArrowLeft']) {
+      //   console.log('Moving left!');
+      moveDirection = -1;
+    } else if (keys['ArrowRight']) {
+      //   console.log('Moving right!');
+      moveDirection = 1;
+    }
+    // console.log(`Player Velocity: ${player.velocity.x}`);
+    // console.log(`Move Direction: ${moveDirection}`);
+
+    // Set velocity to fixed speed
+    Body.setVelocity(player, { x: moveDirection * fixedSpeed, y: player.velocity.y });
+  }
+});
+
+// Add player and collision sensor to world
+// World.add(engine.world, [player, playerSensor]);
+World.add(engine.world, [player, playerSensor]);
+
+// run the engine
+var runner = Matter.Runner.create();
+Matter.Runner.run(runner, engine);
+
+// run the renderer
+Render.run(render);
+/*
+TODO:
+Improve UI
+Fix traps snapping to off the map
+Stop trap collisions
+Use reddit api to save levelData change
+Make traps smaller and change levelData to use 2d arrays for traps with objects that maybe look like
+{
+trapType
+position
+}
+*/
+const button = document.createElement('button');
+button.innerText = 'Add Traps';
+document.body.appendChild(button);
+
+button.id = 'button';
+const drawGrid = () => {
+  const context = render.context;
+  const width = render.options.width!;
+  const height = render.options.height!;
+
+  context.strokeStyle = '#ddd';
+  context.lineWidth = 1;
+
+  for (let x = 0; x <= width; x += TILE_SIZE) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+  }
+
+  for (let y = 0; y <= height; y += TILE_SIZE) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+  }
+};
+const findEmptyTile = () => {
+  for (let i = levelData.length - 1; i >= 0; i--) {
+    for (let j = levelData[i].length - 1; j >= 0; j--) {
+      if (levelData[i][j] === Tiles.Blank) {
+        return Bodies.rectangle(
+          j * TILE_SIZE + TILE_SIZE / 2,
+          i * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE,
+          TILE_SIZE,
+          {
+            label: 'new',
+            restitution: 0,
+            inertia: Infinity,
+            frictionAir: 0,
+            friction: 0,
+            frictionStatic: 0,
+          }
+        );
+      }
+    }
+  }
+  return Bodies.rectangle(0, 0, TILE_SIZE, TILE_SIZE, { label: 'new' });
+};
+const snapToCenter = (value: number) => {
+  return Math.ceil(value / TILE_SIZE) * TILE_SIZE - TILE_SIZE / 2;
+};
+const mouse = Mouse.create(render.canvas);
+const mouseConstraint = MouseConstraint.create(engine, {
+  mouse: mouse,
+  constraint: {
+    stiffness: 0.2,
+    render: { visible: true },
+  },
+});
+const idk = (body: Matter.Body) => {
+  if (body.label === 'new') {
+    body.isStatic = false;
+    Matter.Body.setVelocity(body, {
+      x: 0,
+      y: 0,
+    });
+    Matter.Body.setPosition(body, {
+      x: snapToCenter(body.position.x),
+      y: snapToCenter(body.position.y),
+    });
+  }
+};
+
+let callback: () => void;
+let timeoutId: NodeJS.Timeout | undefined;
+
+Events.on(mouseConstraint, 'startdrag', (e) => {
+  callback = () => idk(e.body);
+  Events.on(engine, 'afterUpdate', callback);
+});
+
+Events.on(mouseConstraint, 'enddrag', () => {
+  // Clear any existing timeout
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
+  // Set a new timeout
+  timeoutId = setTimeout(() => {
+    Events.off(engine, 'afterUpdate', callback);
+    timeoutId = undefined; // Clear the timeout ID
+  }, 100);
+});
+let trapState = false;
+const trapMenu = document.createElement('section');
+const prevGravX = engine.gravity.x;
+const prevGravY = engine.gravity.y;
+let newTile;
+button.addEventListener('click', () => {
+  trapState = !trapState;
+  if (trapState) {
+    Events.on(render, 'afterRender', drawGrid);
+    World.add(engine.world, mouseConstraint);
+    engine.gravity.x = 0;
+    engine.gravity.y = 0;
+    button.remove();
+    trapMenu.appendChild(button);
+    button.innerText = 'Close';
+    document.body.appendChild(trapMenu);
+    trapMenu.id = 'trap-menu';
+    trapMenu.style.height = window.innerHeight + 'px';
+    trapMenu.style.width = window.innerWidth / 4 + 'px';
+
+    for (let i = 1; i <= 15; i++) {
+      const item = document.createElement('div');
+      item.textContent = 'Item ' + i;
+      trapMenu.appendChild(item);
+      item.classList.add('item');
+      item.addEventListener('click', () => {
+        newTile = findEmptyTile();
+        World.add(engine.world, newTile);
+      });
+    }
+  } else {
+    Events.off(render, 'afterRender', drawGrid);
+    World.remove(engine.world, mouseConstraint);
+    const bodies = Composite.allBodies(engine.world);
+    for (const body of bodies) {
+      if (body.label === 'new') {
+        body.isStatic = true;
+        const x = Math.floor(body.position.x / TILE_SIZE);
+        const y = Math.floor(body.position.y / TILE_SIZE);
+        levelData[y][x] = Tiles.Trap;
+        console.log(levelData[y]);
+      }
+    }
+    engine.gravity.x = prevGravX;
+    engine.gravity.y = prevGravY;
+    button.remove();
+    document.body.appendChild(button);
+    button.innerText = 'Add Traps';
+    trapMenu.remove();
+  }
+});
