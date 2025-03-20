@@ -3,7 +3,7 @@ import Matter from 'matter-js';
 export var engine = Matter.Engine.create();
 export var World = Matter.World;
 export var Bodies = Matter.Bodies;
-export const TILE_SIZE = 64;
+export const TILE_SIZE = Math.round(window.innerHeight / 6);
 
 // Tile types
 export enum Tiles {
@@ -98,7 +98,9 @@ function createOuterWalls() {
     frictionStatic: 0, // No static friction
     isStatic: true, // Non-movable object
     label: 'Floor',
-    collisionFilter: {},
+    // collisionFilter: {
+    //   group: -1,
+    // },
   };
   const roof = Matter.Bodies.rectangle(
     levelWidthPx / 2,
@@ -196,7 +198,6 @@ export function genInnerObjs() {
       );
     }
   }
-  console.log(idk);
   return idk;
 }
 

@@ -1,6 +1,6 @@
-import Matter from 'matter-js';
+import Matter, { Composite, Mouse, MouseConstraint } from 'matter-js';
 import { player, playerRadius, playerSensor } from '../Player/character';
-import { engine, World } from './levelGen';
+import { engine, levelData, TILE_SIZE, Tiles, World } from './levelGen';
 
 // X Velocity to maintain
 const fixedSpeed = 0.9;
@@ -10,7 +10,6 @@ player.friction = 0;
 player.frictionAir = 0;
 player.frictionStatic = 0;
 
-const Engine = Matter.Engine;
 const Render = Matter.Render;
 const Events = Matter.Events;
 const Body = Matter.Body;
@@ -20,13 +19,12 @@ var render = Render.create({
   element: document.body,
   engine: engine,
   options: {
-    width: window.innerWidth,
-    height: window.innerHeight,
-    pixelRatio: window.devicePixelRatio,
+    width: TILE_SIZE * 9,
+    height: TILE_SIZE * 6,
     background: 'rgba(16, 5, 28, 0.84)',
 
     wireframeBackground: '#222',
-    // wireframes: false,
+    wireframes: false,
     showVelocity: false,
     // showAngleIndicator: true,
     showCollisions: true,
@@ -130,11 +128,160 @@ Matter.Runner.run(runner, engine);
 
 // run the renderer
 Render.run(render);
+/*
+TODO:
+Improve UI
+Fix traps snapping to off the map
+Stop trap collisions
+Use reddit api to save levelData change
+Make traps smaller and change levelData to use 2d arrays for traps with objects that maybe look like
+{
+trapType
+position
+}
+*/
 const button = document.createElement('button');
-button.innerText = 'stop sim';
+button.innerText = 'Add Traps';
 document.body.appendChild(button);
-button?.addEventListener('click', () => {
-  Render.stop(render);
-  Matter.Runner.stop(runner);
+
+button.id = 'button';
+const drawGrid = () => {
+  const context = render.context;
+  const width = render.options.width!;
+  const height = render.options.height!;
+
+  context.strokeStyle = '#ddd';
+  context.lineWidth = 1;
+
+  for (let x = 0; x <= width; x += TILE_SIZE) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+  }
+
+  for (let y = 0; y <= height; y += TILE_SIZE) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+  }
+};
+const findEmptyTile = () => {
+  for (let i = levelData.length - 1; i >= 0; i--) {
+    for (let j = levelData[i].length - 1; j >= 0; j--) {
+      if (levelData[i][j] === Tiles.Blank) {
+        return Bodies.rectangle(
+          j * TILE_SIZE + TILE_SIZE / 2,
+          i * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE,
+          TILE_SIZE,
+          {
+            label: 'new',
+            restitution: 0,
+            inertia: Infinity,
+            frictionAir: 0,
+            friction: 0,
+            frictionStatic: 0,
+          }
+        );
+      }
+    }
+  }
+  return Bodies.rectangle(0, 0, TILE_SIZE, TILE_SIZE, { label: 'new' });
+};
+const snapToCenter = (value: number) => {
+  return Math.ceil(value / TILE_SIZE) * TILE_SIZE - TILE_SIZE / 2;
+};
+const mouse = Mouse.create(render.canvas);
+const mouseConstraint = MouseConstraint.create(engine, {
+  mouse: mouse,
+  constraint: {
+    stiffness: 0.2,
+    render: { visible: true },
+  },
 });
-document.body.append();
+const idk = (body: Matter.Body) => {
+  if (body.label === 'new') {
+    body.isStatic = false;
+    Matter.Body.setVelocity(body, {
+      x: 0,
+      y: 0,
+    });
+    Matter.Body.setPosition(body, {
+      x: snapToCenter(body.position.x),
+      y: snapToCenter(body.position.y),
+    });
+  }
+};
+
+let callback: () => void;
+let timeoutId: NodeJS.Timeout | undefined;
+
+Events.on(mouseConstraint, 'startdrag', (e) => {
+  callback = () => idk(e.body);
+  Events.on(engine, 'afterUpdate', callback);
+});
+
+Events.on(mouseConstraint, 'enddrag', () => {
+  // Clear any existing timeout
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
+  // Set a new timeout
+  timeoutId = setTimeout(() => {
+    Events.off(engine, 'afterUpdate', callback);
+    timeoutId = undefined; // Clear the timeout ID
+  }, 100);
+});
+let trapState = false;
+const trapMenu = document.createElement('section');
+const prevGravX = engine.gravity.x;
+const prevGravY = engine.gravity.y;
+let newTile;
+button.addEventListener('click', () => {
+  trapState = !trapState;
+  if (trapState) {
+    Events.on(render, 'afterRender', drawGrid);
+    World.add(engine.world, mouseConstraint);
+    engine.gravity.x = 0;
+    engine.gravity.y = 0;
+    button.remove();
+    trapMenu.appendChild(button);
+    button.innerText = 'Close';
+    document.body.appendChild(trapMenu);
+    trapMenu.id = 'trap-menu';
+    trapMenu.style.height = window.innerHeight + 'px';
+    trapMenu.style.width = window.innerWidth / 4 + 'px';
+
+    for (let i = 1; i <= 15; i++) {
+      const item = document.createElement('div');
+      item.textContent = 'Item ' + i;
+      trapMenu.appendChild(item);
+      item.classList.add('item');
+      item.addEventListener('click', () => {
+        newTile = findEmptyTile();
+        World.add(engine.world, newTile);
+      });
+    }
+  } else {
+    Events.off(render, 'afterRender', drawGrid);
+    World.remove(engine.world, mouseConstraint);
+    const bodies = Composite.allBodies(engine.world);
+    for (const body of bodies) {
+      if (body.label === 'new') {
+        body.isStatic = true;
+        const x = Math.floor(body.position.x / TILE_SIZE);
+        const y = Math.floor(body.position.y / TILE_SIZE);
+        levelData[y][x] = Tiles.Trap;
+        console.log(levelData[y]);
+      }
+    }
+    engine.gravity.x = prevGravX;
+    engine.gravity.y = prevGravY;
+    button.remove();
+    document.body.appendChild(button);
+    button.innerText = 'Add Traps';
+    trapMenu.remove();
+  }
+});
