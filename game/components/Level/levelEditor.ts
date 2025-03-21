@@ -148,12 +148,12 @@ spriteSheet.src = '/assets/sprite_sheet.png'; // Replace with your sprite sheet 
 spriteSheet.onload = () => {
   // Define sprite regions
   const spriteRegions = [
-    { x: 0, y: 0, width: 64, height: 64 }, // Region for button 1
-    { x: 64, y: 0, width: 64, height: 64 }, // Region for button 2
-    { x: 128, y: 0, width: 64, height: 64 }, // Region for button 3
-    { x: 0, y: 64, width: 64, height: 64 }, // Region for button 4
-    { x: 64, y: 64, width: 64, height: 64 }, // Region for button 5
-    { x: 128, y: 64, width: 64, height: 64 }, // Region for button 6
+    { x: 0, y: 128, width: 64, height: 64 }, // Spikes
+    { x: 0, y: 192, width: 64, height: 64 }, // Barrel
+    { x: 192, y: 128, width: 64, height: 64 }, // Lever
+    { x: 320, y: 128, width: 64, height: 64 }, // Chest
+    { x: 64, y: 128, width: 64, height: 64 }, // Closed Door
+    { x: 128, y: 128, width: 64, height: 64 }, // Open Door
   ];
 
   // Populate the trap menu

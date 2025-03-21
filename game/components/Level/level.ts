@@ -43,5 +43,5 @@ position
 */
 
 // Add player and collision sensor to world
-World.add(engine.world, [player, playerSensor]);
-World.add(engine.world, [player, playerSensor]);
+// World.add(engine.world, [player, playerSensor]);
+// World.add(engine.world, [player, playerSensor]);
