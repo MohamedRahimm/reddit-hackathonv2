@@ -1,8 +1,6 @@
 import Matter from 'matter-js';
+import { engine, World, Bodies } from '../../main'
 
-export var engine = Matter.Engine.create();
-export var World = Matter.World;
-export var Bodies = Matter.Bodies;
 export const TILE_SIZE = Math.round(window.innerHeight / 6);
 
 // Tile types
@@ -51,13 +49,13 @@ export const levelData = [
   ],
   [
     Tiles.Floor,
-    Tiles.Blank,
-    Tiles.Blank,
-    Tiles.Blank,
-    Tiles.Blank,
-    Tiles.Blank,
-    Tiles.Blank,
-    Tiles.Blank,
+    Tiles.Floor,
+    Tiles.Floor,
+    Tiles.Floor,
+    Tiles.Floor,
+    Tiles.Floor,
+    Tiles.Floor,
+    Tiles.Floor,
     Tiles.Floor,
   ],
   [
@@ -84,9 +82,24 @@ export const levelData = [
   ],
 ];
 
+const spriteSheet = new Image();
+spriteSheet.src = 'assets/sprite_sheet.png'; // Replace with your sprite sheet URL
+
+// spriteSheet.onload = () => {
+//   // Define sprite regions
+//   const spriteRegions = [
+//     { x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 1
+//     { x: 64, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 2
+//     { x: 128, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 3
+//     { x: 0, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 4
+//     { x: 64, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 5
+//     { x: 128, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 6
+//   ];
+// };
+
 const levelOffsetPx = TILE_SIZE / 2;
 function createOuterWalls() {
-  console.log('Creating walls');
+  //   console.log('Creating walls');
   let levelWidthPx = levelData[0].length * TILE_SIZE;
   let levelHeightPx = levelData.length * TILE_SIZE;
   // console.log("Level: x: " + levelWidthPx)
@@ -130,8 +143,8 @@ function createOuterWalls() {
     TILE_SIZE,
     params
   );
-  console.log(roof.vertices);
-  console.log(roof.position);
+  //   console.log(roof.vertices);
+  //   console.log(roof.position);
 
   World.add(engine.world, [roof, leftWall, rightWall, floor]);
 }
@@ -148,23 +161,30 @@ export function genInnerObjs() {
 
     for (let col = 1; col < levelData[row].length - 1; col++) {
       if (levelData[row][col] === Tiles.Door) {
-        World.add(
-          engine.world,
-          Bodies.rectangle(
-            col * TILE_SIZE + TILE_SIZE / 2,
-            row * TILE_SIZE + TILE_SIZE / 2,
-            TILE_SIZE,
-            TILE_SIZE,
-            {
-              isStatic: true,
-              label: 'door',
-              collisionFilter: {
-                category: 0x0002,
-                mask: 0x0004,
-              },
-            }
-          )
+        const door = Bodies.rectangle(
+          col * TILE_SIZE + TILE_SIZE / 2,
+          row * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE,
+          TILE_SIZE,
+          {
+            label: 'door',
+            //   collisionFilter: {
+            //     category: 0x0002,
+            //     mask: 0x0004,
+            //   },
+            restitution: 0,
+            inertia: Infinity,
+            frictionAir: 0,
+            friction: 0,
+            frictionStatic: 0,
+            render: {
+              fillStyle: '#0045FF',
+            },
+          }
         );
+        door.isStatic = true;
+        idk.push(door);
+        // not sure if continue is needed here
         continue;
       } else if (levelData[row][col] !== Tiles.Blank) {
         if (xStart === null) {
@@ -179,6 +199,7 @@ export function genInnerObjs() {
         idk.push(
           Bodies.rectangle(xStart + width / 2, yPos, width, TILE_SIZE, {
             isStatic: true,
+            label: 'Floor',
           })
         );
         // Reset xStart for the next sequence
@@ -194,6 +215,7 @@ export function genInnerObjs() {
       idk.push(
         Bodies.rectangle(xStart + width / 2, yPos, width, TILE_SIZE, {
           isStatic: true,
+          label: 'Floor',
         })
       );
     }

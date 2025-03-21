@@ -12,17 +12,17 @@ html {
 }
 
 #trap-menu {
-
     position: absolute;
     top: 0;
     left: 0;
-    background-color: red;
-    overflow-y: auto;
+    overflow-y: hidden;
+    overflow-x: hidden;
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 10px;
-}
+    padding: 10px;.
+    align-items: flex-start;
+    align-content: space-evenly;
 
 .item {
     flex: 1 1 calc(50% - 10px);
