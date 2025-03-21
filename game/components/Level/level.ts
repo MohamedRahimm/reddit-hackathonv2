@@ -243,7 +243,6 @@ const mouseConstraint = MouseConstraint.create(engine, {
 const idk = (body: Matter.Body) => {
   if (body.label === 'new') {
     body.isStatic = false;
-    body.isSensor = true
     Matter.Body.setVelocity(body, {
       x: 0,
       y: 0,
@@ -263,7 +262,7 @@ Events.on(mouseConstraint, 'startdrag', (e) => {
   Events.on(engine, 'afterUpdate', callback);
 });
 
-Events.on(mouseConstraint, 'enddrag', () => {
+Events.on(mouseConstraint, 'enddrag', (e) => {
   // Clear any existing timeout
   if (timeoutId) {
     clearTimeout(timeoutId);
@@ -277,7 +276,7 @@ Events.on(mouseConstraint, 'enddrag', () => {
 let trapState = false;
 
 
-
+const newPlacedTraps: Matter.Body[] = [];
 for (let i = 1; i <= 6; i++) {
   const item = document.createElement('div');
   item.textContent = 'Item ' + i;
@@ -288,8 +287,11 @@ for (let i = 1; i <= 6; i++) {
   trapMenu.appendChild(item);
   item.classList.add('item');
   item.addEventListener('click', () => {
-    let newTile = findEmptyTile();
-    World.add(engine.world, newTile);
+    if (trapState) {
+      let newTile = findEmptyTile();
+      World.add(engine.world, newTile);
+      newPlacedTraps.push(newTile);
+    }
   });
 }
 
@@ -305,16 +307,17 @@ button.addEventListener('click', () => {
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
-    const bodies = Composite.allBodies(engine.world);
-    for (const body of bodies) {
-      if (body.label === 'new') {
-        body.isStatic = true;
-        const x = Math.floor(body.position.x / TILE_SIZE);
-        const y = Math.floor(body.position.y / TILE_SIZE);
-        levelData[y][x] = Tiles.Trap;
-        console.log(levelData[y]);
-      }
+
+    // Apply transformations to newPlacedTraps
+    for (const body of newPlacedTraps) {
+      body.isStatic = true;
+      const x = Math.floor(body.position.x / TILE_SIZE);
+      const y = Math.floor(body.position.y / TILE_SIZE);
+      levelData[y][x] = Tiles.Trap;
+      console.log(levelData[y]);
     }
+    newPlacedTraps.length = 0;
+
     button.innerText = 'Add Traps';
   }
 });
