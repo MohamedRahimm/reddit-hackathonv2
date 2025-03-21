@@ -3,6 +3,11 @@ import { render } from './level';
 import { levelData, TILE_SIZE, Tiles, trapTypes } from './levelGen';
 import { engine, Events, World, Bodies } from '../../main'
 
+declare module 'matter-js' {
+  interface Body {
+    overlayCanvas: HTMLCanvasElement;
+  }
+}
 
 // Create the toggle button
 const button = document.createElement('button');
@@ -58,6 +63,20 @@ const findEmptyTile = (trap) => {
     for (let j = levelData[i].length - 1; j >= 0; j--) {
       if (levelData[i][j] === Tiles.Blank) {
         levelData[i][j] = Tiles.Trap;
+        // Create overlay canvas
+        const overlayCanvas = document.createElement('canvas');
+        overlayCanvas.width = TILE_SIZE;
+        overlayCanvas.height = TILE_SIZE;
+        overlayCanvas.style.position = 'absolute';
+        overlayCanvas.style.top = `${i * TILE_SIZE}px`;
+        overlayCanvas.style.left = `${j * TILE_SIZE}px`;
+        overlayCanvas.style.pointerEvents = 'none';
+        document.body.appendChild(overlayCanvas);
+
+        const context = overlayCanvas.getContext('2d');
+        context.fillStyle = 'rgba(96, 173, 96, 0.29)';
+        context.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+
         return Bodies.rectangle(
           j * TILE_SIZE + TILE_SIZE / 2,
           i * TILE_SIZE + TILE_SIZE / 2,
@@ -67,25 +86,25 @@ const findEmptyTile = (trap) => {
             label: 'new',
             restitution: 0,
             inertia: Infinity,
-            //isStatic: true,
             frictionAir: 0,
             friction: 0,
             frictionStatic: 0,
             render: {
               sprite: {
                 texture: trap.spritePath,
-                xScale: TILE_SIZE/64,
-                yScale: TILE_SIZE/64,
+                xScale: TILE_SIZE / 64,
+                yScale: TILE_SIZE / 64,
               },
             },
-          }
+            overlayCanvas: overlayCanvas,
+          } as Matter.IChamferableBodyDefinition & { overlayCanvas: HTMLCanvasElement }
         );
       }
     }
   }
-  // this math.random in label is not needed this is me messing with stuff
-  return Bodies.rectangle(0, 0, TILE_SIZE, TILE_SIZE, { label: 'new' + ' ' + Math.random() });
 };
+
+
 const snapToCenter = (value: number) => {
   return Math.floor(value / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
 };
@@ -97,14 +116,13 @@ const mouseConstraint = MouseConstraint.create(engine, {
     render: { visible: true },
   },
 });
-//bugs:
-// when initalizing an object with is isStatic some bug occurs so access thru object and update it instead
-const idk = (
+
+
+const snapBodyToGrid = (
   body: Matter.Body,
   currPos: { x: number; y: number },
   initPos: { x: number; y: number }
 ) => {
-  //   if (body.label.includes('new')) {
   const newX = Math.floor(mouse.position.x / TILE_SIZE);
   const newY = Math.floor(mouse.position.y / TILE_SIZE);
   if (levelData[newY][newX] !== Tiles.Blank) {
@@ -131,6 +149,9 @@ const idk = (
     currX = snapToCenter(mouse.position.x);
     currY = snapToCenter(mouse.position.y);
   }
+  // Update overlay canvas position
+  body.overlayCanvas.style.top = `${body.position.y - TILE_SIZE / 2}px`;
+  body.overlayCanvas.style.left = `${body.position.x - TILE_SIZE / 2}px`;
 };
 
 let callback: () => void;
@@ -212,8 +233,13 @@ button.addEventListener('click', () => {
         currGridX = Math.floor(e.body.position.x / TILE_SIZE);
         currGridY = Math.floor(e.body.position.y / TILE_SIZE);
         e.body.isStatic = false;
-        callback = () => idk(e.body, { x: currX, y: currY }, { x: initPosX, y: initPosY });
+        callback = () => snapBodyToGrid(e.body, { x: currX, y: currY }, { x: initPosX, y: initPosY });
         Events.on(engine, 'afterUpdate', callback);
+
+        // // Draw semi-transparent green overlay
+        // const context = e.body.overlayCanvas.getContext('2d');
+        // context.fillStyle = 'rgba(96, 173, 96, 0.5)';
+        // context.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
       }
     });
 
@@ -235,6 +261,10 @@ button.addEventListener('click', () => {
         initPosY = false;
         levelData[currGridY][currGridX] = e.body.label === 'door' ? Tiles.Door : Tiles.Blank;
         levelData[y][x] = Tiles.Trap;
+
+        // Clear overlay canvas
+        // const context = e.body.overlayCanvas.getContext('2d');
+        // context.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
       }
     });
   } else {
@@ -243,6 +273,15 @@ button.addEventListener('click', () => {
     Events.off(mouseConstraint, 'startdrag');
     Events.off(mouseConstraint, 'enddrag');
     button.innerText = 'Add Traps';
+    clearOverlays();
   }
 });
+
+function clearOverlays(){
+  newPlacedTraps.forEach(body=>{
+    const context = body.overlayCanvas.getContext('2d');
+    context.clearRect(0, 0, TILE_SIZE, TILE_SIZE);
+  })
+}
+
 console.log(Composite.allBodies(engine.world));
