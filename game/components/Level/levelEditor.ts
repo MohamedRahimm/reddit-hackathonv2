@@ -247,7 +247,7 @@ button.addEventListener('click', () => {
       console.log('end');
       const mouse = e.mouse;
       const { x, y } = mouse.mousedownPosition;
-      if (x === e.mouse.mouseupPosition.x && y === e.mouse.mouseupPosition.y) {
+      if (x === e.mouse.mouseupPosition.x && y === e.mouse.mouseupPosition.y && e.body.label !== 'Floor') {
         Matter.Body.rotate(e.body, Math.PI / 2);
       }
       if (e.body.label.includes('new') || e.body.label == 'door') {
