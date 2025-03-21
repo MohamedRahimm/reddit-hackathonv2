@@ -84,6 +84,21 @@ export const levelData = [
   ],
 ];
 
+const spriteSheet = new Image();
+spriteSheet.src = 'assets/sprite_sheet.png'; // Replace with your sprite sheet URL
+
+spriteSheet.onload = () => {
+  // Define sprite regions
+  const spriteRegions = [
+    { x: 0, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 1
+    { x: 64, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 2
+    { x: 128, y: 0, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 3
+    { x: 0, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 4
+    { x: 64, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 5
+    { x: 128, y: 64, width: TILE_SIZE, height: TILE_SIZE }, // Region for button 6
+  ];
+};
+
 const levelOffsetPx = TILE_SIZE / 2;
 function createOuterWalls() {
   console.log('Creating walls');

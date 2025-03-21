@@ -277,23 +277,60 @@ let trapState = false;
 
 
 const newPlacedTraps: Matter.Body[] = [];
-for (let i = 1; i <= 6; i++) {
-  const item = document.createElement('div');
-  item.textContent = 'Item ' + i;
-  item.style.display = 'flex';
-  item.style.alignItems = 'center';
-  item.style.justifyContent = 'center';
-  item.style.fontSize = '30px';
-  trapMenu.appendChild(item);
-  item.classList.add('item');
-  item.addEventListener('click', () => {
-    if (trapState) {
-      let newTile = findEmptyTile();
-      World.add(engine.world, newTile);
-      newPlacedTraps.push(newTile);
-    }
-  });
-}
+const spriteSheet = new Image();
+spriteSheet.src = '/assets/sprite_sheet.png'; // Replace with your sprite sheet URL
+
+
+spriteSheet.onload = () => {
+  // Define sprite regions
+  const spriteRegions = [
+    { x: 0, y: 0, width: 64, height: 64 }, // Region for button 1
+    { x: 64, y: 0, width: 64, height: 64 }, // Region for button 2
+    { x: 128, y: 0, width: 64, height: 64 }, // Region for button 3
+    { x: 0, y: 64, width: 64, height: 64 }, // Region for button 4
+    { x: 64, y: 64, width: 64, height: 64 }, // Region for button 5
+    { x: 128, y: 64, width: 64, height: 64 }, // Region for button 6
+  ];
+
+  // Populate the trap menu
+  for (let i = 1; i <= 6; i++) {
+    const item = document.createElement('button');
+    // item.textContent = 'Item ' + i; // Remove text
+    trapMenu.appendChild(item);
+    item.classList.add('item');
+
+    // Apply sprite sheet background and position
+    item.style.backgroundImage = `url(${spriteSheet.src})`;
+    item.style.backgroundPosition = `-${spriteRegions[i - 1].x}px -${spriteRegions[i - 1].y}px`;
+    item.style.width = `64px`;
+    item.style.height = `64px`;
+    item.style.backgroundColor = 'transparent';
+    item.style.backgroundSize = `${spriteSheet.width}px ${spriteSheet.height}px`;
+    item.style.backgroundRepeat = 'no-repeat';
+    item.style.outlineWidth = '2px';
+    item.style.outlineStyle = 'dashed';
+    item.style.outlineColor = 'yellow';
+    item.style.flexGrow = '0';
+    item.style.alignSelf = 'flex-start';
+    item.style.flexBasis = '64px';
+    item.style.flexShrink = '0';
+    
+
+    item.addEventListener('click', () => {
+      // Only add trap if trapState is true
+      if (trapState) {
+        let newTile = findEmptyTile();
+        World.add(engine.world, newTile);
+        newPlacedTraps.push(newTile);
+        console.log("Before isStatic:", newTile);
+        newTile.isStatic = true;
+        console.log("After isStatic:", newTile);
+        console.log("isStatic:", newTile.isStatic);
+        console.log(newPlacedTraps);
+      }
+    });
+  }
+};
 
 
 // Button click event handler
