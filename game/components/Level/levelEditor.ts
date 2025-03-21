@@ -1,6 +1,6 @@
 import Matter, { Composite, Mouse, MouseConstraint } from 'matter-js';
 import { render } from './level';
-import { levelData, TILE_SIZE, Tiles } from './levelGen';
+import { levelData, TILE_SIZE, Tiles, trapTypes } from './levelGen';
 import { engine, Events, World, Bodies } from '../../main'
 
 
@@ -53,7 +53,7 @@ const drawGrid = () => {
   }
 };
 
-const findEmptyTile = () => {
+const findEmptyTile = (trap) => {
   for (let i = levelData.length - 1; i >= 0; i--) {
     for (let j = levelData[i].length - 1; j >= 0; j--) {
       if (levelData[i][j] === Tiles.Blank) {
@@ -73,9 +73,9 @@ const findEmptyTile = () => {
             frictionStatic: 0,
             render: {
               sprite: {
-                texture: '/assets/sprite_sheet.png',
-                xScale: 1,
-                yScale: 1,
+                texture: trap.spritePath,
+                xScale: TILE_SIZE/64,
+                yScale: TILE_SIZE/64,
               },
             },
           }
@@ -98,7 +98,6 @@ const mouseConstraint = MouseConstraint.create(engine, {
   },
 });
 //bugs:
-// when mousedown cant drag trap back to original Position
 // when initalizing an object with is isStatic some bug occurs so access thru object and update it instead
 const idk = (
   body: Matter.Body,
@@ -149,32 +148,31 @@ const newPlacedTraps: Matter.Body[] = [];
 const spriteSheet = new Image();
 spriteSheet.src = '/assets/sprite_sheet.png'; // Replace with your sprite sheet URL
 
-spriteSheet.onload = () => {
-  // Define sprite regions
-  const spriteRegions = [
-    { x: 0, y: 128, width: 64, height: 64 }, // Spikes
-    { x: 0, y: 192, width: 64, height: 64 }, // Barrel
-    { x: 192, y: 128, width: 64, height: 64 }, // Lever
-    { x: 320, y: 128, width: 64, height: 64 }, // Chest
-    { x: 64, y: 128, width: 64, height: 64 }, // Closed Door
-    { x: 128, y: 128, width: 64, height: 64 }, // Open Door
-  ];
+// Define sprite regions
+const spriteRegions = [
+  { x: 0, y: 128, width: 64, height: 64 }, // Spikes
+  { x: 0, y: 192, width: 64, height: 64 }, // Barrel
+  { x: 192, y: 128, width: 64, height: 64 }, // Lever
+  { x: 320, y: 128, width: 64, height: 64 }, // Chest
+  { x: 64, y: 128, width: 64, height: 64 }, // Closed Door
+  { x: 128, y: 128, width: 64, height: 64 }, // Open Door
+];
 
+spriteSheet.onload = () => {
   // Populate the trap menu
-  for (let i = 1; i <= 6; i++) {
+  for (const trap of trapTypes) {
     const item = document.createElement('button');
-    // item.textContent = 'Item ' + i; // Remove text
     trapMenu.appendChild(item);
     item.classList.add('item');
 
     // Apply sprite sheet background and position
     item.style.backgroundImage = `url(${spriteSheet.src})`;
-    item.style.backgroundPosition = `-${spriteRegions[i - 1].x}px -${spriteRegions[i - 1].y}px`;
+    item.style.backgroundPosition = `-${spriteRegions[trap.index].x}px -${spriteRegions[trap.index].y}px`;
     item.style.width = `64px`;
     item.style.height = `64px`;
     item.style.backgroundColor = 'transparent';
-    item.style.backgroundSize = `${spriteSheet.width}px ${spriteSheet.height}px`;
-    item.style.backgroundRepeat = 'no-repeat';
+    // item.style.backgroundSize = `${spriteSheet.width}px ${spriteSheet.height}px`;
+    // item.style.backgroundRepeat = 'no-repeat';
     item.style.outlineWidth = '2px';
     item.style.outlineStyle = 'dashed';
     item.style.outlineColor = 'yellow';
@@ -186,7 +184,7 @@ spriteSheet.onload = () => {
     item.addEventListener('click', () => {
       // Only add trap if trapState is true
       if (trapState) {
-        let newTile = findEmptyTile();
+        let newTile = findEmptyTile(trap);
         World.add(engine.world, newTile);
         newPlacedTraps.push(newTile);
       }
@@ -203,10 +201,8 @@ button.addEventListener('click', () => {
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
     Events.on(mouseConstraint, 'startdrag', (e) => {
+      console.log(e)
       if (e.body.label.includes('new') || e.body.label === 'door') {
-        // console.log(e.body);
-        // Matter.Body.rotate(e.body, -e.body.angle);
-        // console.log('draging');
         currX = e.body.position.x;
         currY = e.body.position.y;
         if (!initPosX && !initPosY) {
@@ -222,7 +218,6 @@ button.addEventListener('click', () => {
     });
 
     Events.on(mouseConstraint, 'enddrag', (e) => {
-      //   console.log(e);
       console.log('end');
       const mouse = e.mouse;
       const { x, y } = mouse.mousedownPosition;
@@ -247,8 +242,6 @@ button.addEventListener('click', () => {
     World.remove(engine.world, mouseConstraint);
     Events.off(mouseConstraint, 'startdrag');
     Events.off(mouseConstraint, 'enddrag');
-    // button.remove();
-    // document.body.appendChild(button);
     button.innerText = 'Add Traps';
   }
 });

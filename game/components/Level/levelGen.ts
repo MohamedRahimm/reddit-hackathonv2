@@ -12,6 +12,15 @@ export enum Tiles {
   Floor = 'Floor',
 }
 
+export const trapTypes = [
+  { name: 'Spikes', spritePath: '/assets/spike_trap.png', index: 0 },
+  { name: 'Barrel', spritePath: '/assets/barrel.png', index: 1 },
+  { name: 'Lever', spritePath: '/assets/lever_OFF.png', index: 2 },
+  { name: 'Door_open', spritePath: '/assets/door_OPEN.png', index: 3 },
+  { name: 'Door_closed', spritePath: '/assets/door_CLOSED.png', index: 4 },
+  { name: 'Chest', spritePath: '/assets/chest.png', index: 5 },
+];
+
 // Level layout
 export const levelData = [
   [
