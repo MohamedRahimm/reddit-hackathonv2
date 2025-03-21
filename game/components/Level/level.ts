@@ -64,7 +64,7 @@ function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Eng
     const pair = pairs[i];
     const bodyA = pair.bodyA;
     const bodyB = pair.bodyB;
-    console.log(`  Body B ${bodyB.label}, Body A ${bodyA.label}`);
+    // console.log(`  Body B ${bodyB.label}, Body A ${bodyA.label}`);
 
     if (
       (bodyA.label === 'Sensor' && bodyB.label.includes('Floor')) ||
@@ -140,11 +140,48 @@ trapType
 position
 }
 */
+
+// Create the game area container
+const gameArea = document.createElement('section');
+gameArea.id = 'game-area';
+gameArea.style.position = 'absolute';
+gameArea.style.top = '0';
+gameArea.style.left = '0';
+gameArea.style.width = TILE_SIZE * 9 + 'px';
+gameArea.style.height = TILE_SIZE * 6 + 'px';
+gameArea.style.backgroundColor = 'transparent'; // Make it invisible
+document.body.appendChild(gameArea);
+
+// Append the render canvas to the game area container
+gameArea.appendChild(render.canvas);
+
+// Create the toggle button
 const button = document.createElement('button');
 button.innerText = 'Add Traps';
+button.id = 'button';
+button.style.position = 'absolute';
+button.style.top = '0';
+button.style.left = TILE_SIZE * 9 + 'px';
+button.style.width = window.innerWidth - TILE_SIZE * 9 + 'px';
+button.style.height = window.innerHeight / 8 + 'px';
+// Center and enlarge text
+button.style.display = 'flex';
+button.style.alignItems = 'center';
+button.style.justifyContent = 'center';
+button.style.fontSize = '60px';
 document.body.appendChild(button);
 
-button.id = 'button';
+// Create the trap menu
+const trapMenu = document.createElement('section');
+trapMenu.id = 'trap-menu';
+trapMenu.style.position = 'absolute';
+trapMenu.style.top = window.innerHeight / 8 + 'px';
+trapMenu.style.left = TILE_SIZE * 9 + 'px';
+trapMenu.style.width = window.innerWidth - TILE_SIZE * 9 - 20 + 'px';
+trapMenu.style.height = window.innerHeight * (7 / 8) - 20 + 'px';
+document.body.appendChild(trapMenu);
+
+
 const drawGrid = () => {
   const context = render.context;
   const width = render.options.width!;
@@ -167,6 +204,7 @@ const drawGrid = () => {
     context.stroke();
   }
 };
+
 const findEmptyTile = () => {
   for (let i = levelData.length - 1; i >= 0; i--) {
     for (let j = levelData[i].length - 1; j >= 0; j--) {
@@ -180,6 +218,7 @@ const findEmptyTile = () => {
             label: 'new',
             restitution: 0,
             inertia: Infinity,
+            //isStatic: true,
             frictionAir: 0,
             friction: 0,
             frictionStatic: 0,
@@ -204,6 +243,7 @@ const mouseConstraint = MouseConstraint.create(engine, {
 const idk = (body: Matter.Body) => {
   if (body.label === 'new') {
     body.isStatic = false;
+    body.isSensor = true
     Matter.Body.setVelocity(body, {
       x: 0,
       y: 0,
@@ -235,35 +275,33 @@ Events.on(mouseConstraint, 'enddrag', () => {
   }, 100);
 });
 let trapState = false;
-const trapMenu = document.createElement('section');
-const prevGravX = engine.gravity.x;
-const prevGravY = engine.gravity.y;
-let newTile;
+
+
+
+for (let i = 1; i <= 6; i++) {
+  const item = document.createElement('div');
+  item.textContent = 'Item ' + i;
+  item.style.display = 'flex';
+  item.style.alignItems = 'center';
+  item.style.justifyContent = 'center';
+  item.style.fontSize = '30px';
+  trapMenu.appendChild(item);
+  item.classList.add('item');
+  item.addEventListener('click', () => {
+    let newTile = findEmptyTile();
+    World.add(engine.world, newTile);
+  });
+}
+
+
+// Button click event handler
 button.addEventListener('click', () => {
   trapState = !trapState;
+  console.log(trapState);
   if (trapState) {
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
-    engine.gravity.x = 0;
-    engine.gravity.y = 0;
-    button.remove();
-    trapMenu.appendChild(button);
     button.innerText = 'Close';
-    document.body.appendChild(trapMenu);
-    trapMenu.id = 'trap-menu';
-    trapMenu.style.height = window.innerHeight + 'px';
-    trapMenu.style.width = window.innerWidth / 4 + 'px';
-
-    for (let i = 1; i <= 15; i++) {
-      const item = document.createElement('div');
-      item.textContent = 'Item ' + i;
-      trapMenu.appendChild(item);
-      item.classList.add('item');
-      item.addEventListener('click', () => {
-        newTile = findEmptyTile();
-        World.add(engine.world, newTile);
-      });
-    }
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
@@ -277,11 +315,6 @@ button.addEventListener('click', () => {
         console.log(levelData[y]);
       }
     }
-    engine.gravity.x = prevGravX;
-    engine.gravity.y = prevGravY;
-    button.remove();
-    document.body.appendChild(button);
     button.innerText = 'Add Traps';
-    trapMenu.remove();
   }
 });
