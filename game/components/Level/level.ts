@@ -64,7 +64,7 @@ function checkCollision(start: boolean, event: Matter.IEventCollision<Matter.Eng
     const pair = pairs[i];
     const bodyA = pair.bodyA;
     const bodyB = pair.bodyB;
-    console.log(`  Body B ${bodyB.label}, Body A ${bodyA.label}`);
+    // console.log(`  Body B ${bodyB.label}, Body A ${bodyA.label}`);
 
     if (
       (bodyA.label === 'Sensor' && bodyB.label.includes('Floor')) ||
@@ -86,6 +86,8 @@ Events.on(engine, 'collisionEnd', (event) => {
 
 Events.on(engine, 'collisionStart', (event) => {
   player.plugin.ground = checkCollision(true, event);
+  //   console.log(event.pairs[0].bodyA);
+  //   console.log(event.pairs[0].bodyB);
 });
 
 let moveDirection = 1;
@@ -120,7 +122,7 @@ Events.on(engine, 'beforeUpdate', function () {
 
 // Add player and collision sensor to world
 // World.add(engine.world, [player, playerSensor]);
-World.add(engine.world, [player, playerSensor]);
+// World.add(engine.world, [player, playerSensor]);
 
 // run the engine
 var runner = Matter.Runner.create();
@@ -131,10 +133,9 @@ Render.run(render);
 /*
 TODO:
 Improve UI
-Fix traps snapping to off the map
-Stop trap collisions
 Use reddit api to save levelData change
 Make traps smaller and change levelData to use 2d arrays for traps with objects that maybe look like
+they can spawn and overlap each other
 {
 trapType
 position
@@ -171,6 +172,7 @@ const findEmptyTile = () => {
   for (let i = levelData.length - 1; i >= 0; i--) {
     for (let j = levelData[i].length - 1; j >= 0; j--) {
       if (levelData[i][j] === Tiles.Blank) {
+        levelData[i][j] = Tiles.Trap;
         return Bodies.rectangle(
           j * TILE_SIZE + TILE_SIZE / 2,
           i * TILE_SIZE + TILE_SIZE / 2,
@@ -188,10 +190,11 @@ const findEmptyTile = () => {
       }
     }
   }
-  return Bodies.rectangle(0, 0, TILE_SIZE, TILE_SIZE, { label: 'new' });
+  // this math.random in label is not needed this is me messing with stuff
+  return Bodies.rectangle(0, 0, TILE_SIZE, TILE_SIZE, { label: 'new' + ' ' + Math.random() });
 };
 const snapToCenter = (value: number) => {
-  return Math.ceil(value / TILE_SIZE) * TILE_SIZE - TILE_SIZE / 2;
+  return Math.floor(value / TILE_SIZE) * TILE_SIZE + TILE_SIZE / 2;
 };
 const mouse = Mouse.create(render.canvas);
 const mouseConstraint = MouseConstraint.create(engine, {
@@ -201,51 +204,74 @@ const mouseConstraint = MouseConstraint.create(engine, {
     render: { visible: true },
   },
 });
-const idk = (body: Matter.Body) => {
-  if (body.label === 'new') {
-    body.isStatic = false;
+//bugs:
+// when mousedown cant drag trap back to original Position
+// when initalizing an object with is isStatic some bug occurs so access thru object and update it instead
+const idk = (body: Matter.Body, currPos: { x: number; y: number }) => {
+  //   if (body.label.includes('new')) {
+  const newX = Math.floor(mouse.position.x / TILE_SIZE);
+  const newY = Math.floor(mouse.position.y / TILE_SIZE);
+  if (levelData[newY][newX] !== Tiles.Blank) {
+    Matter.Body.setPosition(body, {
+      x: currPos.x,
+      y: currPos.y,
+    });
+  } else {
     Matter.Body.setVelocity(body, {
       x: 0,
       y: 0,
     });
     Matter.Body.setPosition(body, {
-      x: snapToCenter(body.position.x),
-      y: snapToCenter(body.position.y),
+      x: snapToCenter(mouse.position.x),
+      y: snapToCenter(mouse.position.y),
     });
+    currX = snapToCenter(mouse.position.x);
+    currY = snapToCenter(mouse.position.y);
   }
+  //   }
 };
 
 let callback: () => void;
-let timeoutId: NodeJS.Timeout | undefined;
+let currX: number;
+let currY: number;
+let currGridX: number;
+let currGridY: number;
 
-Events.on(mouseConstraint, 'startdrag', (e) => {
-  callback = () => idk(e.body);
-  Events.on(engine, 'afterUpdate', callback);
-});
-
-Events.on(mouseConstraint, 'enddrag', () => {
-  // Clear any existing timeout
-  if (timeoutId) {
-    clearTimeout(timeoutId);
-  }
-  // Set a new timeout
-  timeoutId = setTimeout(() => {
-    Events.off(engine, 'afterUpdate', callback);
-    timeoutId = undefined; // Clear the timeout ID
-  }, 100);
-});
+console.log(TILE_SIZE);
 let trapState = false;
 const trapMenu = document.createElement('section');
-const prevGravX = engine.gravity.x;
-const prevGravY = engine.gravity.y;
 let newTile;
 button.addEventListener('click', () => {
   trapState = !trapState;
   if (trapState) {
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
-    engine.gravity.x = 0;
-    engine.gravity.y = 0;
+    Events.on(mouseConstraint, 'startdrag', (e) => {
+      if (e.body.label.includes('new') || e.body.label === 'door') {
+        console.log(e.body);
+        currX = e.body.position.x;
+        currY = e.body.position.y;
+        currGridX = Math.floor(e.body.position.x / TILE_SIZE);
+        currGridY = Math.floor(e.body.position.y / TILE_SIZE);
+        e.body.isStatic = false;
+        callback = () => idk(e.body, { x: currX, y: currY });
+        Events.on(engine, 'afterUpdate', callback);
+      }
+    });
+
+    Events.on(mouseConstraint, 'enddrag', (e) => {
+      if (e.body.label.includes('new') || e.body.label == 'door') {
+        Events.off(engine, 'afterUpdate', callback);
+        e.body.isStatic = true;
+        e.body.positionImpulse = { x: 0, y: 0 };
+        e.body.constraintImpulse = { x: 0, y: 0, angle: 0 };
+        const x = Math.floor(e.body.position.x / TILE_SIZE);
+        const y = Math.floor(e.body.position.y / TILE_SIZE);
+        levelData[currGridY][currGridX] = e.body.label === 'door' ? Tiles.Door : Tiles.Blank;
+        levelData[y][x] = Tiles.Trap;
+        console.log(levelData);
+      }
+    });
     button.remove();
     trapMenu.appendChild(button);
     button.innerText = 'Close';
@@ -261,27 +287,19 @@ button.addEventListener('click', () => {
       item.classList.add('item');
       item.addEventListener('click', () => {
         newTile = findEmptyTile();
+        newTile.isStatic = true;
         World.add(engine.world, newTile);
       });
     }
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
-    const bodies = Composite.allBodies(engine.world);
-    for (const body of bodies) {
-      if (body.label === 'new') {
-        body.isStatic = true;
-        const x = Math.floor(body.position.x / TILE_SIZE);
-        const y = Math.floor(body.position.y / TILE_SIZE);
-        levelData[y][x] = Tiles.Trap;
-        console.log(levelData[y]);
-      }
-    }
-    engine.gravity.x = prevGravX;
-    engine.gravity.y = prevGravY;
+    Events.off(mouseConstraint, 'startdrag');
+    Events.off(mouseConstraint, 'enddrag');
     button.remove();
     document.body.appendChild(button);
     button.innerText = 'Add Traps';
     trapMenu.remove();
   }
 });
+console.log(Composite.allBodies(engine.world));
