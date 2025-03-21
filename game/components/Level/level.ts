@@ -278,7 +278,6 @@ let currGridY: number;
 
 console.log(TILE_SIZE);
 let trapState = false;
-const trapMenu = document.createElement('section');
 let newTile;
 
 
@@ -344,6 +343,7 @@ button.addEventListener('click', () => {
   trapState = !trapState;
   console.log(trapState);
   if (trapState) {
+    button.innerText = 'Close'
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
     Events.on(mouseConstraint, 'startdrag', (e) => {
@@ -372,25 +372,7 @@ button.addEventListener('click', () => {
         console.log(levelData);
       }
     });
-    button.remove();
-    trapMenu.appendChild(button);
-    button.innerText = 'Close';
-    document.body.appendChild(trapMenu);
-    trapMenu.id = 'trap-menu';
-    trapMenu.style.height = window.innerHeight + 'px';
-    trapMenu.style.width = window.innerWidth / 4 + 'px';
 
-    for (let i = 1; i <= 15; i++) {
-      const item = document.createElement('div');
-      item.textContent = 'Item ' + i;
-      trapMenu.appendChild(item);
-      item.classList.add('item');
-      item.addEventListener('click', () => {
-        newTile = findEmptyTile();
-        newTile.isStatic = true;
-        World.add(engine.world, newTile);
-      });
-    }
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
