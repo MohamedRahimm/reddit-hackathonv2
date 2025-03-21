@@ -182,7 +182,6 @@ trapMenu.style.width = window.innerWidth - TILE_SIZE * 9 - 20 + 'px';
 trapMenu.style.height = window.innerHeight * (7 / 8) - 20 + 'px';
 document.body.appendChild(trapMenu);
 
-
 const drawGrid = () => {
   const context = render.context;
   const width = render.options.width!;
@@ -246,16 +245,33 @@ const mouseConstraint = MouseConstraint.create(engine, {
 //bugs:
 // when mousedown cant drag trap back to original Position
 // when initalizing an object with is isStatic some bug occurs so access thru object and update it instead
-const idk = (body: Matter.Body, currPos: { x: number; y: number }) => {
+const idk = (
+  body: Matter.Body,
+  currPos: { x: number; y: number },
+  initPos: { x: number; y: number }
+) => {
+  //   console.log(initPos);
   //   if (body.label.includes('new')) {
   const newX = Math.floor(mouse.position.x / TILE_SIZE);
   const newY = Math.floor(mouse.position.y / TILE_SIZE);
+  //   console.log('enw', newX, 'init', initPos.x);
   if (levelData[newY][newX] !== Tiles.Blank) {
-    Matter.Body.setPosition(body, {
-      x: currPos.x,
-      y: currPos.y,
-    });
+    if (newX === initPos.x && newY === initPos.y) {
+      //   console.log('eofeoefj');
+      //   console.log('init');
+      Matter.Body.setPosition(body, {
+        x: snapToCenter(mouse.position.x),
+        y: snapToCenter(mouse.position.y),
+      });
+    } else {
+      //   console.log('prev');
+      Matter.Body.setPosition(body, {
+        x: currPos.x,
+        y: currPos.y,
+      });
+    }
   } else {
+    // console.log('go');
     Matter.Body.setVelocity(body, {
       x: 0,
       y: 0,
@@ -269,10 +285,11 @@ const idk = (body: Matter.Body, currPos: { x: number; y: number }) => {
   }
   //   }
 };
-
 let callback: () => void;
 let currX: number;
 let currY: number;
+let initPosX: number | boolean;
+let initPosY: number | boolean;
 let currGridX: number;
 let currGridY: number;
 
@@ -280,11 +297,9 @@ console.log(TILE_SIZE);
 let trapState = false;
 let newTile;
 
-
 const newPlacedTraps: Matter.Body[] = [];
 const spriteSheet = new Image();
 spriteSheet.src = '/assets/sprite_sheet.png'; // Replace with your sprite sheet URL
-
 
 spriteSheet.onload = () => {
   // Define sprite regions
@@ -319,7 +334,6 @@ spriteSheet.onload = () => {
     item.style.alignSelf = 'flex-start';
     item.style.flexBasis = '64px';
     item.style.flexShrink = '0';
-    
 
     item.addEventListener('click', () => {
       // Only add trap if trapState is true
@@ -327,23 +341,22 @@ spriteSheet.onload = () => {
         let newTile = findEmptyTile();
         World.add(engine.world, newTile);
         newPlacedTraps.push(newTile);
-        console.log("Before isStatic:", newTile);
+        console.log('Before isStatic:', newTile);
         newTile.isStatic = true;
-        console.log("After isStatic:", newTile);
-        console.log("isStatic:", newTile.isStatic);
+        console.log('After isStatic:', newTile);
+        console.log('isStatic:', newTile.isStatic);
         console.log(newPlacedTraps);
       }
     });
   }
 };
 
-
 // Button click event handler
 button.addEventListener('click', () => {
   trapState = !trapState;
   console.log(trapState);
   if (trapState) {
-    button.innerText = 'Close'
+    button.innerText = 'Close';
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
     Events.on(mouseConstraint, 'startdrag', (e) => {
@@ -351,10 +364,14 @@ button.addEventListener('click', () => {
         console.log(e.body);
         currX = e.body.position.x;
         currY = e.body.position.y;
+        if (!initPosX && !initPosY) {
+          initPosX = Math.floor(currX / TILE_SIZE);
+          initPosY = Math.floor(currY / TILE_SIZE);
+        }
         currGridX = Math.floor(e.body.position.x / TILE_SIZE);
         currGridY = Math.floor(e.body.position.y / TILE_SIZE);
         e.body.isStatic = false;
-        callback = () => idk(e.body, { x: currX, y: currY });
+        callback = () => idk(e.body, { x: currX, y: currY }, { x: initPosX, y: initPosY });
         Events.on(engine, 'afterUpdate', callback);
       }
     });
@@ -367,12 +384,13 @@ button.addEventListener('click', () => {
         e.body.constraintImpulse = { x: 0, y: 0, angle: 0 };
         const x = Math.floor(e.body.position.x / TILE_SIZE);
         const y = Math.floor(e.body.position.y / TILE_SIZE);
+        initPosX = false;
+        initPosY = false;
         levelData[currGridY][currGridX] = e.body.label === 'door' ? Tiles.Door : Tiles.Blank;
         levelData[y][x] = Tiles.Trap;
-        console.log(levelData);
+        // console.log(levelData);
       }
     });
-
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
