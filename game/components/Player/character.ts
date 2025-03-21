@@ -22,7 +22,7 @@ interface PlayerParams {
   ground: boolean;
 }
 
-export const playerRadius = 25;
+export const playerRadius = TILE_SIZE/4;
 export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRadius, {
   label: 'character',
   //   density: 0.001,

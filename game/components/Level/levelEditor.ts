@@ -1,6 +1,6 @@
-import { levelData, TILE_SIZE, Tiles } from './levelGen';
 import Matter, { Composite, Mouse, MouseConstraint } from 'matter-js';
 import { render } from './level';
+import { levelData, TILE_SIZE, Tiles } from './levelGen';
 import { engine, Events, World, Bodies } from '../../main'
 
 
@@ -29,7 +29,6 @@ trapMenu.style.left = TILE_SIZE * 9 + 'px';
 trapMenu.style.width = window.innerWidth - TILE_SIZE * 9 - 20 + 'px';
 trapMenu.style.height = window.innerHeight * (7 / 8) - 20 + 'px';
 document.body.appendChild(trapMenu);
-
 
 const drawGrid = () => {
   const context = render.context;
@@ -72,6 +71,13 @@ const findEmptyTile = () => {
             frictionAir: 0,
             friction: 0,
             frictionStatic: 0,
+            render: {
+              sprite: {
+                texture: '/assets/sprite_sheet.png',
+                xScale: 1,
+                yScale: 1,
+              },
+            },
           }
         );
       }
@@ -113,7 +119,7 @@ const idk = (
         x: currPos.x,
         y: currPos.y,
       });
-     }
+    }
   } else {
     Matter.Body.setVelocity(body, {
       x: 0,
@@ -139,11 +145,9 @@ let currGridY: number;
 console.log(TILE_SIZE);
 let trapState = false;
 
-
 const newPlacedTraps: Matter.Body[] = [];
 const spriteSheet = new Image();
 spriteSheet.src = '/assets/sprite_sheet.png'; // Replace with your sprite sheet URL
-
 
 spriteSheet.onload = () => {
   // Define sprite regions
@@ -178,7 +182,6 @@ spriteSheet.onload = () => {
     item.style.alignSelf = 'flex-start';
     item.style.flexBasis = '64px';
     item.style.flexShrink = '0';
-    
 
     item.addEventListener('click', () => {
       // Only add trap if trapState is true
@@ -186,16 +189,10 @@ spriteSheet.onload = () => {
         let newTile = findEmptyTile();
         World.add(engine.world, newTile);
         newPlacedTraps.push(newTile);
-        console.log("Before isStatic:", newTile);
-        newTile.isStatic = true;
-        console.log("After isStatic:", newTile);
-        console.log("isStatic:", newTile.isStatic);
-        console.log(newPlacedTraps);
       }
     });
   }
 };
-
 
 // Button click event handler
 button.addEventListener('click', () => {
@@ -207,7 +204,9 @@ button.addEventListener('click', () => {
     World.add(engine.world, mouseConstraint);
     Events.on(mouseConstraint, 'startdrag', (e) => {
       if (e.body.label.includes('new') || e.body.label === 'door') {
-        console.log(e.body);
+        // console.log(e.body);
+        // Matter.Body.rotate(e.body, -e.body.angle);
+        // console.log('draging');
         currX = e.body.position.x;
         currY = e.body.position.y;
         if (!initPosX && !initPosY) {
@@ -223,6 +222,13 @@ button.addEventListener('click', () => {
     });
 
     Events.on(mouseConstraint, 'enddrag', (e) => {
+      //   console.log(e);
+      console.log('end');
+      const mouse = e.mouse;
+      const { x, y } = mouse.mousedownPosition;
+      if (x === e.mouse.mouseupPosition.x && y === e.mouse.mouseupPosition.y) {
+        Matter.Body.rotate(e.body, Math.PI / 2);
+      }
       if (e.body.label.includes('new') || e.body.label == 'door') {
         Events.off(engine, 'afterUpdate', callback);
         e.body.isStatic = true;
@@ -236,7 +242,6 @@ button.addEventListener('click', () => {
         levelData[y][x] = Tiles.Trap;
       }
     });
-
   } else {
     Events.off(render, 'afterRender', drawGrid);
     World.remove(engine.world, mouseConstraint);
@@ -247,4 +252,4 @@ button.addEventListener('click', () => {
     button.innerText = 'Add Traps';
   }
 });
-// console.log(Composite.allBodies(engine.world));
+console.log(Composite.allBodies(engine.world));
