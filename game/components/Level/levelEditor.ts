@@ -94,15 +94,26 @@ const mouseConstraint = MouseConstraint.create(engine, {
 //bugs:
 // when mousedown cant drag trap back to original Position
 // when initalizing an object with is isStatic some bug occurs so access thru object and update it instead
-const idk = (body: Matter.Body, currPos: { x: number; y: number }) => {
+const idk = (
+  body: Matter.Body,
+  currPos: { x: number; y: number },
+  initPos: { x: number; y: number }
+) => {
   //   if (body.label.includes('new')) {
   const newX = Math.floor(mouse.position.x / TILE_SIZE);
   const newY = Math.floor(mouse.position.y / TILE_SIZE);
   if (levelData[newY][newX] !== Tiles.Blank) {
-    Matter.Body.setPosition(body, {
-      x: currPos.x,
-      y: currPos.y,
-    });
+    if (newX === initPos.x && newY === initPos.y) {
+      Matter.Body.setPosition(body, {
+        x: snapToCenter(mouse.position.x),
+        y: snapToCenter(mouse.position.y),
+      });
+    } else {
+      Matter.Body.setPosition(body, {
+        x: currPos.x,
+        y: currPos.y,
+      });
+     }
   } else {
     Matter.Body.setVelocity(body, {
       x: 0,
@@ -115,12 +126,13 @@ const idk = (body: Matter.Body, currPos: { x: number; y: number }) => {
     currX = snapToCenter(mouse.position.x);
     currY = snapToCenter(mouse.position.y);
   }
-  //   }
 };
 
 let callback: () => void;
 let currX: number;
 let currY: number;
+let initPosX: number | boolean;
+let initPosY: number | boolean;
 let currGridX: number;
 let currGridY: number;
 
@@ -190,7 +202,7 @@ button.addEventListener('click', () => {
   trapState = !trapState;
   console.log(trapState);
   if (trapState) {
-    button.innerText = 'Close'
+    button.innerText = 'Close';
     Events.on(render, 'afterRender', drawGrid);
     World.add(engine.world, mouseConstraint);
     Events.on(mouseConstraint, 'startdrag', (e) => {
@@ -198,10 +210,14 @@ button.addEventListener('click', () => {
         console.log(e.body);
         currX = e.body.position.x;
         currY = e.body.position.y;
+        if (!initPosX && !initPosY) {
+          initPosX = Math.floor(currX / TILE_SIZE);
+          initPosY = Math.floor(currY / TILE_SIZE);
+        }
         currGridX = Math.floor(e.body.position.x / TILE_SIZE);
         currGridY = Math.floor(e.body.position.y / TILE_SIZE);
         e.body.isStatic = false;
-        callback = () => idk(e.body, { x: currX, y: currY });
+        callback = () => idk(e.body, { x: currX, y: currY }, { x: initPosX, y: initPosY });
         Events.on(engine, 'afterUpdate', callback);
       }
     });
@@ -214,9 +230,10 @@ button.addEventListener('click', () => {
         e.body.constraintImpulse = { x: 0, y: 0, angle: 0 };
         const x = Math.floor(e.body.position.x / TILE_SIZE);
         const y = Math.floor(e.body.position.y / TILE_SIZE);
+        initPosX = false;
+        initPosY = false;
         levelData[currGridY][currGridX] = e.body.label === 'door' ? Tiles.Door : Tiles.Blank;
         levelData[y][x] = Tiles.Trap;
-        console.log(levelData);
       }
     });
 
