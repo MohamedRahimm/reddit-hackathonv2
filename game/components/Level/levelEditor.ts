@@ -89,6 +89,8 @@ const findEmptyTile = (trap) => {
             frictionAir: 0,
             friction: 0,
             frictionStatic: 0,
+            isSensor: true,
+            isStatic: true,
             render: {
               sprite: {
                 texture: trap.spritePath,
@@ -247,7 +249,7 @@ button.addEventListener('click', () => {
       console.log('end');
       const mouse = e.mouse;
       const { x, y } = mouse.mousedownPosition;
-      if (x === e.mouse.mouseupPosition.x && y === e.mouse.mouseupPosition.y) {
+      if (x === e.mouse.mouseupPosition.x && y === e.mouse.mouseupPosition.y && e.body.label !== 'Floor') {
         Matter.Body.rotate(e.body, Math.PI / 2);
       }
       if (e.body.label.includes('new') || e.body.label == 'door') {
@@ -274,6 +276,19 @@ button.addEventListener('click', () => {
     Events.off(mouseConstraint, 'enddrag');
     button.innerText = 'Add Traps';
     clearOverlays();
+  }
+});
+
+//Anti-gravity force for all placed traps
+Events.on(engine, 'beforeUpdate', () => {
+  const gravityScale = engine.gravity.y; // Get the world's gravity scale
+  if (gravityScale !== 0) {
+    newPlacedTraps.forEach((body) => {
+      Matter.Body.applyForce(body, body.position, {
+        x: 0,
+        y: -gravityScale * body.mass, // Apply force opposite to gravity
+      });
+    });
   }
 });
 
