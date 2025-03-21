@@ -1,10 +1,10 @@
 import Matter from 'matter-js';
-import { engine, levelData, TILE_SIZE, World } from './levelGen';
+import { levelData, TILE_SIZE } from './levelGen';
 import { player, playerSensor } from '../Player/character';
+import { engine, World } from '../../main'
 
 
 const Render = Matter.Render;
-export const Events = Matter.Events;
 export const Body = Matter.Body;
 
 export var render = Render.create({
@@ -43,5 +43,5 @@ position
 */
 
 // Add player and collision sensor to world
-// World.add(engine.world, [player, playerSensor]);
-// World.add(engine.world, [player, playerSensor]);
+World.add(engine.world, [player, playerSensor]);
+World.add(engine.world, [player, playerSensor]);

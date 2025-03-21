@@ -1,9 +1,8 @@
-import { engine } from '../Level/levelGen';
-import { Events } from '../Level/level';
+import { engine, Events, Body } from '../../main';
 import { player, playerSensor, playerRadius } from './character';
-import Matter from 'matter-js';
 
-const Body = Matter.Body
+export const player_physics = () => {
+
 
 // X Velocity to maintain
 const fixedSpeed = 0.9;
@@ -22,7 +21,7 @@ document.body.addEventListener('keyup', function (e) {
 Events.on(engine, 'afterUpdate', function () {
   if (player && playerSensor) {
     //set sensor velocity to zero so it collides properly
-    Matter.Body.setVelocity(playerSensor, {
+    Body.setVelocity(playerSensor, {
       x: 0,
       y: 0,
     });
@@ -96,3 +95,4 @@ Events.on(engine, 'beforeUpdate', function () {
     Body.setVelocity(player, { x: moveDirection * fixedSpeed, y: player.velocity.y });
   }
 });
+}

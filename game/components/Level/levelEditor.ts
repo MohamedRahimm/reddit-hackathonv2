@@ -1,8 +1,8 @@
-import { engine, levelData, TILE_SIZE, Tiles, World } from './levelGen';
+import { levelData, TILE_SIZE, Tiles } from './levelGen';
 import Matter, { Composite, Mouse, MouseConstraint } from 'matter-js';
-import { render, Events } from './level';
+import { render } from './level';
+import { engine, Events, World, Bodies } from '../../main'
 
-const Bodies = Matter.Bodies;
 
 // Create the toggle button
 const button = document.createElement('button');
@@ -247,4 +247,4 @@ button.addEventListener('click', () => {
     button.innerText = 'Add Traps';
   }
 });
-console.log(Composite.allBodies(engine.world));
+// console.log(Composite.allBodies(engine.world));

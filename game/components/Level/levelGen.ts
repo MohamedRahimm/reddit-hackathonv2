@@ -1,8 +1,6 @@
 import Matter from 'matter-js';
+import { engine, World, Bodies } from '../../main'
 
-export var engine = Matter.Engine.create();
-export var World = Matter.World;
-export var Bodies = Matter.Bodies;
 export const TILE_SIZE = Math.round(window.innerHeight / 6);
 
 // Tile types

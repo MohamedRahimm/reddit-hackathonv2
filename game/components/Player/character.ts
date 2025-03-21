@@ -1,5 +1,6 @@
-import Matter from 'matter-js';
 import { levelData, TILE_SIZE, Tiles } from '../Level/levelGen';
+import { Bodies } from '../../main'
+import { player_physics } from './characterPhysics';
 
 function findDoorPosition(levelData: Tiles[][]): { x: number; y: number } {
   for (let row = 0; row < levelData.length; row++) {
@@ -16,7 +17,6 @@ function findDoorPosition(levelData: Tiles[][]): { x: number; y: number } {
 const doorPos = findDoorPosition(levelData);
 const playerX = doorPos.x * TILE_SIZE + TILE_SIZE / 2;
 const playerY = doorPos.y * TILE_SIZE + TILE_SIZE;
-const Bodies = Matter.Bodies;
 
 interface PlayerParams {
   ground: boolean;
@@ -57,3 +57,9 @@ export var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
     visible: false,
   },
 });
+
+// ensure player has no friction
+player.friction = 0;
+player.frictionAir = 0;
+player.frictionStatic = 0;
+player_physics()
