@@ -1,7 +1,4 @@
-import Matter from 'matter-js';
-import { engine, World, Bodies } from '../../main'
-
-export const TILE_SIZE = Math.round(window.innerHeight / 6);
+import { Bodies, TILE_SIZE } from '../../main';
 
 // Tile types
 export enum Tiles {
@@ -47,13 +44,13 @@ export const levelData = [
   ],
   [
     Tiles.Floor,
-    Tiles.Floor,
-    Tiles.Floor,
-    Tiles.Floor,
     Tiles.Blank,
-    Tiles.Floor,
-    Tiles.Floor,
-    Tiles.Floor,
+    Tiles.Blank,
+    Tiles.Blank,
+    Tiles.Blank,
+    Tiles.Blank,
+    Tiles.Blank,
+    Tiles.Blank,
     Tiles.Floor,
   ],
   [
@@ -61,7 +58,7 @@ export const levelData = [
     Tiles.Floor,
     Tiles.Floor,
     Tiles.Floor,
-    Tiles.Floor,
+    Tiles.Blank,
     Tiles.Floor,
     Tiles.Floor,
     Tiles.Floor,
@@ -124,28 +121,22 @@ function createOuterWalls() {
     //   group: -1,
     // },
   };
-  const roof = Matter.Bodies.rectangle(
-    levelWidthPx / 2,
-    levelOffsetPx,
-    levelWidthPx,
-    TILE_SIZE,
-    params
-  );
-  const leftWall = Matter.Bodies.rectangle(
+  const roof = Bodies.rectangle(levelWidthPx / 2, levelOffsetPx, levelWidthPx, TILE_SIZE, params);
+  const leftWall = Bodies.rectangle(
     levelOffsetPx,
     levelHeightPx / 2,
     TILE_SIZE,
     levelHeightPx - 2 * TILE_SIZE,
     params
   );
-  const rightWall = Matter.Bodies.rectangle(
+  const rightWall = Bodies.rectangle(
     levelWidthPx - levelOffsetPx,
     levelHeightPx / 2,
     TILE_SIZE,
     levelHeightPx - 2 * TILE_SIZE,
     params
   );
-  const floor = Matter.Bodies.rectangle(
+  const floor = Bodies.rectangle(
     levelWidthPx / 2,
     levelHeightPx - levelOffsetPx,
     levelWidthPx,
@@ -155,14 +146,11 @@ function createOuterWalls() {
   //   console.log(roof.vertices);
   //   console.log(roof.position);
 
-  World.add(engine.world, [roof, leftWall, rightWall, floor]);
+  return [roof, leftWall, rightWall, floor];
 }
 
-createOuterWalls();
-
-export function genInnerObjs() {
-  const idk = [];
-
+function createInnerWalls() {
+  const out = [];
   // Loop through the inner part of the levelData, excluding borders
   for (let row = 1; row < levelData.length - 1; row++) {
     let xStart = null;
@@ -177,10 +165,10 @@ export function genInnerObjs() {
           TILE_SIZE,
           {
             label: 'door',
-            //   collisionFilter: {
-            //     category: 0x0002,
-            //     mask: 0x0004,
-            //   },
+            collisionFilter: {
+              category: 0x0002,
+              mask: 0x0004,
+            },
             restitution: 0,
             inertia: Infinity,
             frictionAir: 0,
@@ -192,7 +180,7 @@ export function genInnerObjs() {
           }
         );
         door.isStatic = true;
-        idk.push(door);
+        out.push(door);
         // not sure if continue is needed here
         continue;
       } else if (levelData[row][col] !== Tiles.Blank) {
@@ -205,7 +193,7 @@ export function genInnerObjs() {
         let xEnd = col * TILE_SIZE;
         let width = xEnd - xStart;
 
-        idk.push(
+        out.push(
           Bodies.rectangle(xStart + width / 2, yPos, width, TILE_SIZE, {
             isStatic: true,
             label: 'Floor',
@@ -221,7 +209,7 @@ export function genInnerObjs() {
       let xEnd = (levelData[row].length - 2) * TILE_SIZE + TILE_SIZE;
       let width = xEnd - xStart;
 
-      idk.push(
+      out.push(
         Bodies.rectangle(xStart + width / 2, yPos, width, TILE_SIZE, {
           isStatic: true,
           label: 'Floor',
@@ -229,7 +217,8 @@ export function genInnerObjs() {
       );
     }
   }
-  return idk;
+  return out;
 }
-
-World.add(engine.world, genInnerObjs());
+export const generateLevel = () => {
+  return [...createInnerWalls(), ...createOuterWalls()];
+};

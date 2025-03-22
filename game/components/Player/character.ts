@@ -1,5 +1,5 @@
-import { levelData, TILE_SIZE, Tiles } from '../Level/levelGen';
-import { Bodies } from '../../main'
+import { Bodies, TILE_SIZE } from '../../main';
+import { levelData, Tiles } from '../Level/levelGen';
 import { player_physics } from './characterPhysics';
 
 function findDoorPosition(levelData: Tiles[][]): { x: number; y: number } {
@@ -22,7 +22,7 @@ interface PlayerParams {
   ground: boolean;
 }
 
-export const playerRadius = TILE_SIZE/4;
+export const playerRadius = TILE_SIZE / 4;
 export const player = Bodies.rectangle(playerX, playerY, playerRadius, playerRadius, {
   label: 'character',
   //   density: 0.001,
@@ -62,4 +62,4 @@ export var playerSensor = Bodies.rectangle(0, 0, playerRadius, 5, {
 player.friction = 0;
 player.frictionAir = 0;
 player.frictionStatic = 0;
-player_physics()
+player_physics();
